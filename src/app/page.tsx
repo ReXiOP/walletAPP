@@ -1,9 +1,10 @@
 'use client';
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { BarChart, LineChart, PieChart, DollarSign, TrendingUp, TrendingDown, Activity, AlertTriangle, ListChecks, PiggyBank, MoreHorizontal, CheckCircle, ExternalLink } from 'lucide-react';
+import { BarChart, LineChart, PieChart as PieChartIcon, DollarSign, TrendingUp, TrendingDown, Activity, AlertTriangle, ListChecks, PiggyBank, MoreHorizontal, CheckCircle } from 'lucide-react';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
-import { Bar, Line, Pie, ResponsiveContainer, Cell, TooltipProps, PieLabelRenderProps } from 'recharts';
+import { Bar, Line, Pie, ResponsiveContainer, Cell, TooltipProps, PieLabelRenderProps, XAxis, YAxis } from 'recharts';
+import * as RechartsPrimitive from 'recharts'; // Import RechartsPrimitive
 import { useAppData } from '@/contexts/AppDataContext';
 import type { Transaction, Budget, CategoryName } from '@/types';
 import { CATEGORIES } from '@/types';
@@ -12,7 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { format, parseISO, differenceInDays, isSameDay, isThisMonth, isThisYear } from 'date-fns';
+import { format, parseISO, isSameDay, isThisMonth } from 'date-fns';
 import { CategoryIcon } from '@/components/shared/CategoryIcon';
 
 const CHART_COLORS_PRIMARY = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
@@ -42,7 +43,7 @@ const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>)
   return null;
 };
 
-const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, name }: PieLabelRenderProps & {name: string}) => {
+const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: PieLabelRenderProps ) => {
   if (percent === undefined || midAngle === undefined || innerRadius === undefined || outerRadius === undefined || cx === undefined || cy === undefined ) return null;
   const RADIAN = Math.PI / 180;
   const radius = innerRadius + (outerRadius - innerRadius) * 0.6; // Place label further inside
@@ -109,7 +110,7 @@ export default function DashboardPage() {
     })
     .sort((a,b) => (a.progress > b.progress ? -1 : 1)) // Sort by most progress
     .slice(0, 3); // Show top 3 budgets
-  }, [budgets, transactions, getCategorySpentAmount]);
+  }, [budgets, getCategorySpentAmount]);
 
   const netChangeToday = React.useMemo(() => {
     const today = new Date();
@@ -217,13 +218,13 @@ export default function DashboardPage() {
             {balanceOverTimeData.length > 0 ? (
               <ChartContainer config={{ balance: { label: 'Balance', color: 'hsl(var(--chart-1))' } }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={balanceOverTimeData} margin={{ top: 5, right: 25, left: -20, bottom: 5 }}>
+                  <RechartsPrimitive.LineChart data={balanceOverTimeData} margin={{ top: 5, right: 25, left: -20, bottom: 5 }}>
                     <defs><linearGradient id="balanceGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.8}/><stop offset="95%" stopColor="hsl(var(--chart-1))" stopOpacity={0}/></linearGradient></defs>
                     <Line type="monotone" dataKey="balance" stroke="hsl(var(--chart-1))" strokeWidth={2.5} dot={{ r: 3, strokeWidth:1, fill: 'hsl(var(--background))', stroke: 'hsl(var(--chart-1))' }} activeDot={{r: 5}} fillOpacity={1} fill="url(#balanceGradient)" />
                     <ChartTooltip content={<CustomTooltip />} cursor={{strokeDasharray: '4 4', stroke: 'hsl(var(--muted-foreground))', strokeOpacity: 0.5}} />
                     <RechartsPrimitive.XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => value} className="text-xs"/>
                     <RechartsPrimitive.YAxis tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => `$${value/1000}k`} className="text-xs"/>
-                  </LineChart>
+                  </RechartsPrimitive.LineChart>
                 </ResponsiveContainer>
               </ChartContainer>
             ) : <p className="text-muted-foreground text-center pt-10">No transaction data for balance chart.</p>}
@@ -232,14 +233,14 @@ export default function DashboardPage() {
 
         <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
           <CardHeader>
-            <CardTitle className="text-lg font-semibold flex items-center"><PieChart className="mr-2 h-5 w-5 text-primary"/>Top Expense Categories</CardTitle>
+            <CardTitle className="text-lg font-semibold flex items-center"><PieChartIcon className="mr-2 h-5 w-5 text-primary"/>Top Expense Categories</CardTitle>
             <CardDescription>Where your money is going</CardDescription>
           </CardHeader>
           <CardContent className="h-[300px] md:h-[350px] flex items-center justify-center">
             {expenseByCategoryData.length > 0 ? (
               <ChartContainer config={expenseByCategoryData.reduce((acc, entry) => { acc[entry.name] = { label: entry.name, color: entry.fill }; return acc; }, {} as any)}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
+                  <RechartsPrimitive.PieChart>
                     <Pie data={expenseByCategoryData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius="85%" labelLine={false} label={renderCustomizedLabel}>
                       {expenseByCategoryData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.fill} stroke={"hsl(var(--background))"} strokeWidth={2} className="focus:outline-none hover:opacity-80 transition-opacity"/>
@@ -247,7 +248,7 @@ export default function DashboardPage() {
                     </Pie>
                     <ChartTooltip content={<CustomTooltip />} />
                     <ChartLegend content={<ChartLegendContent nameKey="name" className="text-xs mt-2"/>} />
-                  </PieChart>
+                  </RechartsPrimitive.PieChart>
                 </ResponsiveContainer>
               </ChartContainer>
             ) : <p className="text-muted-foreground text-center pt-10">No expense data to display.</p>}
