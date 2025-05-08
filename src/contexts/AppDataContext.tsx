@@ -2,19 +2,23 @@
 'use client';
 import type { ReactNode } from 'react';
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import type { Transaction, Budget, CategoryName } from '@/types';
+import type { Transaction, Budget, AppCategory } from '@/types';
+import { DEFAULT_CATEGORIES_DATA } from '@/types';
 import { useToast } from "@/hooks/use-toast";
 
 interface AppDataContextType {
   transactions: Transaction[];
   budgets: Budget[];
+  appCategories: AppCategory[];
   addTransaction: (transaction: Omit<Transaction, 'id'>) => void;
   editTransaction: (transaction: Transaction) => void;
   deleteTransaction: (id: string) => void;
   addBudget: (budget: Omit<Budget, 'id'>) => void;
   editBudget: (budget: Budget) => void;
   deleteBudget: (id: string) => void;
-  getCategorySpentAmount: (category: CategoryName) => number;
+  addAppCategory: (name: string, iconKey: string) => void;
+  deleteAppCategory: (id: string) => void; // Only for user-defined categories
+  getCategorySpentAmount: (categoryName: string) => number;
   totalIncome: number;
   totalExpenses: number;
   currentBalance: number;
@@ -25,9 +29,18 @@ interface AppDataContextType {
 
 const AppDataContext = createContext<AppDataContextType | undefined>(undefined);
 
+const getDefaultAppCategories = (): AppCategory[] => {
+  return DEFAULT_CATEGORIES_DATA.map(cat => ({
+    ...cat,
+    id: crypto.randomUUID(),
+    isUserDefined: false,
+  }));
+};
+
 export const AppDataProvider = ({ children }: { children: ReactNode }) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
+  const [appCategories, setAppCategories] = useState<AppCategory[]>(getDefaultAppCategories());
   const [isLoaded, setIsLoaded] = useState(false);
   const { toast } = useToast();
 
@@ -39,6 +52,18 @@ export const AppDataProvider = ({ children }: { children: ReactNode }) => {
     const storedBudgets = localStorage.getItem('budgetzen-budgets');
     if (storedBudgets) {
       setBudgets(JSON.parse(storedBudgets));
+    }
+    const storedAppCategories = localStorage.getItem('budgetzen-appCategories');
+    if (storedAppCategories) {
+      const parsedCategories: AppCategory[] = JSON.parse(storedAppCategories);
+      // Ensure default categories are present if not in stored data or if structure changed
+      const defaultCategoryNames = new Set(DEFAULT_CATEGORIES_DATA.map(dc => dc.name));
+      const storedUserCategories = parsedCategories.filter(pc => pc.isUserDefined);
+      const currentDefaults = getDefaultAppCategories();
+      const finalCategories = [...currentDefaults.filter(dc => !parsedCategories.find(pc => pc.name === dc.name && !pc.isUserDefined)), ...parsedCategories.filter(pc => defaultCategoryNames.has(pc.name) && !pc.isUserDefined), ...storedUserCategories];
+      setAppCategories(finalCategories.sort((a,b) => a.name.localeCompare(b.name)));
+    } else {
+      setAppCategories(getDefaultAppCategories().sort((a,b) => a.name.localeCompare(b.name)));
     }
     setIsLoaded(true);
   }, []);
@@ -55,9 +80,15 @@ export const AppDataProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [budgets, isLoaded]);
 
+  useEffect(() => {
+    if (isLoaded) {
+      localStorage.setItem('budgetzen-appCategories', JSON.stringify(appCategories));
+    }
+  }, [appCategories, isLoaded]);
+
   const addTransaction = useCallback((transaction: Omit<Transaction, 'id'>) => {
     setTransactions(prev => [...prev, { ...transaction, id: crypto.randomUUID() }].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-    toast({ title: "Transaction added", description: `${transaction.description} for $${transaction.amount.toFixed(2)}` });
+    toast({ title: "Transaction added", description: `${transaction.description} for $${Math.abs(transaction.amount).toFixed(2)}` });
   }, [toast]);
 
   const editTransaction = useCallback((updatedTransaction: Transaction) => {
@@ -89,18 +120,44 @@ export const AppDataProvider = ({ children }: { children: ReactNode }) => {
     toast({ title: "Budget deleted" });
   }, [toast]);
   
-  const getCategorySpentAmount = useCallback((category: CategoryName): number => {
+  const getCategorySpentAmount = useCallback((categoryName: string): number => {
     return transactions
-      .filter(t => t.category === category && t.type === 'expense')
-      .reduce((sum, t) => sum + t.amount, 0);
+      .filter(t => t.category === categoryName && t.type === 'expense')
+      .reduce((sum, t) => sum + Math.abs(t.amount), 0); // Ensure using absolute amount for expenses
   }, [transactions]);
 
+  const addAppCategory = useCallback((name: string, iconKey: string) => {
+    if (appCategories.some(cat => cat.name.toLowerCase() === name.toLowerCase())) {
+      toast({ title: "Error", description: `Category "${name}" already exists.`, variant: "destructive" });
+      return;
+    }
+    const newCategory: AppCategory = { id: crypto.randomUUID(), name, iconKey, isUserDefined: true };
+    setAppCategories(prev => [...prev, newCategory].sort((a,b) => a.name.localeCompare(b.name)));
+    toast({ title: "Category added", description: `Category "${name}" created.` });
+  }, [appCategories, toast]);
+
+  const deleteAppCategory = useCallback((id: string) => {
+    const categoryToDelete = appCategories.find(cat => cat.id === id);
+    if (!categoryToDelete || !categoryToDelete.isUserDefined) {
+      toast({ title: "Error", description: "Cannot delete default categories.", variant: "destructive" });
+      return;
+    }
+    // Check if category is in use by transactions or budgets
+    if (transactions.some(t => t.category === categoryToDelete.name) || budgets.some(b => b.category === categoryToDelete.name)) {
+        toast({ title: "Error", description: `Category "${categoryToDelete.name}" is in use and cannot be deleted.`, variant: "destructive" });
+        return;
+    }
+    setAppCategories(prev => prev.filter(cat => cat.id !== id));
+    toast({ title: "Category deleted", description: `Category "${categoryToDelete.name}" removed.` });
+  }, [appCategories, transactions, budgets, toast]);
+
+
   const totalIncome = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
-  const totalExpenses = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
-  const currentBalance = totalIncome - totalExpenses;
+  const totalExpenses = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0); // Expenses are negative
+  const currentBalance = totalIncome + totalExpenses; // Since expenses are negative, this becomes income - abs(expenses)
 
   const exportData = useCallback(() => {
-    const data = JSON.stringify({ transactions, budgets }, null, 2);
+    const data = JSON.stringify({ transactions, budgets, appCategories }, null, 2);
     const blob = new Blob([data], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -111,38 +168,55 @@ export const AppDataProvider = ({ children }: { children: ReactNode }) => {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     toast({ title: "Data Exported", description: "Your data has been downloaded." });
-  }, [transactions, budgets, toast]);
+  }, [transactions, budgets, appCategories, toast]);
 
   const importData = useCallback((file: File) => {
     const reader = new FileReader();
     reader.onload = (event) => {
       try {
         const data = JSON.parse(event.target?.result as string);
-        if (data.transactions && Array.isArray(data.transactions) && data.budgets && Array.isArray(data.budgets)) {
+        if (data.transactions && Array.isArray(data.transactions)) {
           setTransactions(data.transactions.sort((a:Transaction,b:Transaction) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-          setBudgets(data.budgets.sort((a:Budget,b:Budget) => a.category.localeCompare(b.category)));
-          toast({ title: "Data Imported", description: "Your data has been successfully imported." });
         } else {
-          toast({ title: "Import Error", description: "Invalid file format.", variant: "destructive" });
+          setTransactions([]); // Clear if not present or invalid
         }
+        if (data.budgets && Array.isArray(data.budgets)) {
+          setBudgets(data.budgets.sort((a:Budget,b:Budget) => a.category.localeCompare(b.category)));
+        } else {
+          setBudgets([]); // Clear
+        }
+        if (data.appCategories && Array.isArray(data.appCategories)) {
+           const importedCategories: AppCategory[] = data.appCategories;
+           // Merge with defaults: ensure defaults are preserved, user-defined are added/updated
+            const defaultCats = getDefaultAppCategories();
+            const userDefinedImported = importedCategories.filter(ic => ic.isUserDefined);
+            const baseCategories = defaultCats.map(dc => {
+                const foundImportedDefault = importedCategories.find(ic => ic.name === dc.name && !ic.isUserDefined);
+                return foundImportedDefault || dc;
+            });
+            const finalCategories = [...baseCategories, ...userDefinedImported.filter(udc => !baseCategories.find(bc => bc.name === udc.name))];
+            setAppCategories(finalCategories.sort((a,b) => a.name.localeCompare(b.name)));
+        } else {
+           setAppCategories(getDefaultAppCategories().sort((a,b) => a.name.localeCompare(b.name)));
+        }
+        toast({ title: "Data Imported", description: "Your data has been successfully imported." });
       } catch (error) {
-        toast({ title: "Import Error", description: "Failed to parse file.", variant: "destructive" });
+        toast({ title: "Import Error", description: "Failed to parse file or invalid format.", variant: "destructive" });
       }
     };
     reader.readAsText(file);
   }, [toast]);
 
-
-  // Render children only after data is loaded to prevent hydration issues if children depend on this data
   if (!isLoaded) {
     return null; 
   }
 
   return (
     <AppDataContext.Provider value={{ 
-      transactions, budgets, 
+      transactions, budgets, appCategories,
       addTransaction, editTransaction, deleteTransaction,
       addBudget, editBudget, deleteBudget,
+      addAppCategory, deleteAppCategory,
       getCategorySpentAmount,
       totalIncome, totalExpenses, currentBalance,
       exportData, importData,

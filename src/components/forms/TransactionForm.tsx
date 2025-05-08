@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
@@ -25,19 +26,17 @@ import { CalendarIcon } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import type { Transaction, CategoryName } from '@/types';
-import { CATEGORIES } from '@/types';
+import type { Transaction } from '@/types';
 import { useAppData } from '@/contexts/AppDataContext';
+import { ScrollArea } from '../ui/scroll-area';
 
 const transactionFormSchema = z.object({
   date: z.date({
     required_error: "A date is required.",
   }),
-  description: z.string().min(1, "Description is required."),
+  description: z.string().min(1, "Description is required.").max(100, "Description is too long."),
   amount: z.coerce.number().positive("Amount must be positive."),
-  category: z.enum(CATEGORIES.map(c => c.name) as [CategoryName, ...CategoryName[]], {
-    required_error: "Category is required.",
-  }),
+  category: z.string().min(1, "Category is required."), // Now a string
   type: z.enum(['income', 'expense'], {
     required_error: "Type is required.",
   }),
@@ -52,7 +51,9 @@ interface TransactionFormProps {
 }
 
 export const TransactionForm: React.FC<TransactionFormProps> = ({ transaction, initialType, onClose }) => {
-  const { addTransaction, editTransaction } = useAppData();
+  const { addTransaction, editTransaction, appCategories } = useAppData();
+
+  const defaultCategory = appCategories.find(c => c.name === 'Other')?.name || (appCategories.length > 0 ? appCategories[0].name : '');
 
   const form = useForm<TransactionFormValues>({
     resolver: zodResolver(transactionFormSchema),
@@ -66,29 +67,34 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ transaction, i
           date: new Date(),
           description: '',
           amount: 0,
-          type: initialType || 'expense', // Use initialType if provided
-          category: CATEGORIES[1].name, // Default to 'Food' or any other sensible default if not editing
+          type: initialType || 'expense',
+          category: initialType === 'income' 
+            ? (appCategories.find(c => c.name === 'Salary')?.name || defaultCategory)
+            : (appCategories.find(c => c.name === 'Food')?.name || defaultCategory),
         },
   });
 
   useEffect(() => {
     if (!transaction && initialType) {
+      const categoryForType = initialType === 'income' 
+        ? (appCategories.find(c => c.name === 'Salary')?.name || defaultCategory)
+        : (appCategories.find(c => c.name === 'Food')?.name || defaultCategory);
       form.reset({
         date: new Date(),
         description: '',
         amount: 0,
         type: initialType,
-        category: initialType === 'income' ? CATEGORIES.find(c => c.name === 'Salary')?.name || CATEGORIES[0].name : CATEGORIES.find(c => c.name === 'Food')?.name || CATEGORIES[1].name,
+        category: categoryForType,
       });
     }
-  }, [initialType, transaction, form]);
+  }, [initialType, transaction, form, appCategories, defaultCategory]);
 
   const onSubmit = (data: TransactionFormValues) => {
     const finalAmount = data.type === 'expense' ? -Math.abs(data.amount) : Math.abs(data.amount);
     
     const transactionData = {
       ...data,
-      date: format(data.date, 'yyyy-MM-dd'),
+      date: format(data.date, 'yyyy-MM-dd'), // Store date as YYYY-MM-DD string
       amount: finalAmount
     };
 
@@ -207,11 +213,13 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ transaction, i
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {CATEGORIES.map(cat => (
-                    <SelectItem key={cat.name} value={cat.name}>
+                  <ScrollArea className="h-[200px]">
+                  {appCategories.map(cat => (
+                    <SelectItem key={cat.id} value={cat.name}>
                       {cat.name}
                     </SelectItem>
                   ))}
+                  </ScrollArea>
                 </SelectContent>
               </Select>
               <FormMessage />

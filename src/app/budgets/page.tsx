@@ -13,16 +13,15 @@ import {
 } from '@/components/ui/dialog';
 import { BudgetForm } from '@/components/forms/BudgetForm';
 import { useAppData } from '@/contexts/AppDataContext';
-import type { Budget, CategoryName } from '@/types';
-import { CATEGORIES } from '@/types';
+import type { Budget } from '@/types';
 import { PlusCircle, Edit, Trash2 } from 'lucide-react';
-import { CategoryIcon } from '@/components/shared/CategoryIcon';
+import { CategoryIcon, getCategoryByName } from '@/components/shared/CategoryIcon';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 export default function BudgetsPage() {
-  const { budgets, deleteBudget, getCategorySpentAmount, isLoaded } = useAppData();
+  const { budgets, deleteBudget, getCategorySpentAmount, isLoaded, appCategories } = useAppData();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingBudget, setEditingBudget] = useState<Budget | undefined>(undefined);
 
@@ -43,11 +42,12 @@ export default function BudgetsPage() {
 
   const budgetsWithSpent = useMemo(() => {
     return budgets.map(budget => {
-      const spent = getCategorySpentAmount(budget.category as CategoryName);
-      const progress = budget.amount > 0 ? (spent / budget.amount) * 100 : 0;
-      return { ...budget, spent, progress: Math.min(progress, 100) }; // Cap progress at 100%
+      const spent = getCategorySpentAmount(budget.category);
+      const progress = budget.amount > 0 ? (Math.abs(spent) / budget.amount) * 100 : 0;
+      const categoryDetails = getCategoryByName(appCategories, budget.category);
+      return { ...budget, spent: Math.abs(spent), progress: Math.min(progress, 100), iconKey: categoryDetails?.iconKey || 'Package' }; // Cap progress at 100%
     }).sort((a, b) => a.category.localeCompare(b.category));
-  }, [budgets, getCategorySpentAmount]);
+  }, [budgets, getCategorySpentAmount, appCategories]);
 
   if (!isLoaded) {
     return (
@@ -117,7 +117,7 @@ export default function BudgetsPage() {
                   <div className="flex justify-between items-start">
                     <div>
                       <CardTitle className="text-xl flex items-center gap-2">
-                        <CategoryIcon category={budget.category as CategoryName} className="h-6 w-6 text-primary" />
+                        <CategoryIcon iconKey={budget.iconKey} className="h-6 w-6 text-primary" />
                         {budget.category}
                       </CardTitle>
                       <CardDescription>Target: ${budget.amount.toFixed(2)}</CardDescription>

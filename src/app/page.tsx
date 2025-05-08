@@ -1,20 +1,19 @@
+
 'use client';
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { BarChart, LineChart, PieChart as PieChartIcon, DollarSign, TrendingUp, TrendingDown, Activity, AlertTriangle, ListChecks, PiggyBank, MoreHorizontal, CheckCircle } from 'lucide-react';
+import { DollarSign, TrendingUp, TrendingDown, Activity, AlertTriangle, ListChecks, PiggyBank, MoreHorizontal, CheckCircle } from 'lucide-react';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
-import { Bar, Line, Pie, ResponsiveContainer, Cell, TooltipProps, PieLabelRenderProps, XAxis, YAxis } from 'recharts';
-import * as RechartsPrimitive from 'recharts'; // Import RechartsPrimitive
+import { Bar, Line, Pie, ResponsiveContainer, Cell, TooltipProps, PieLabelRenderProps, XAxis, YAxis, LineChart, PieChart as RechartsPieChart } from 'recharts';
 import { useAppData } from '@/contexts/AppDataContext';
-import type { Transaction, Budget, CategoryName } from '@/types';
-import { CATEGORIES } from '@/types';
+import type { Transaction, Budget } from '@/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { format, parseISO, isSameDay, isThisMonth } from 'date-fns';
-import { CategoryIcon } from '@/components/shared/CategoryIcon';
+import { CategoryIcon, getCategoryByName } from '@/components/shared/CategoryIcon';
 
 const CHART_COLORS_PRIMARY = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
 
@@ -61,12 +60,7 @@ const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, per
 };
 
 export default function DashboardPage() {
-  const { transactions, budgets, totalIncome, totalExpenses, currentBalance, getCategorySpentAmount, isLoaded } = useAppData();
-
-  const incomeExpenseData: ChartData[] = [
-    { name: 'Income', value: totalIncome, fill: 'hsl(var(--chart-1))' },
-    { name: 'Expenses', value: totalExpenses, fill: 'hsl(var(--chart-2))' },
-  ];
+  const { transactions, budgets, totalIncome, totalExpenses, currentBalance, getCategorySpentAmount, isLoaded, appCategories } = useAppData();
 
   const expenseByCategoryData = React.useMemo(() => {
     const categoryMap: Record<string, number> = {};
@@ -103,25 +97,20 @@ export default function DashboardPage() {
 
   const budgetHighlights = React.useMemo(() => {
     return budgets.map(budget => {
-      const spent = getCategorySpentAmount(budget.category as CategoryName);
-      const progress = budget.amount > 0 ? (spent / budget.amount) * 100 : 0;
-      const remaining = budget.amount - spent;
-      return { ...budget, spent, progress: Math.min(progress, 100), remaining };
+      const spent = getCategorySpentAmount(budget.category);
+      const progress = budget.amount > 0 ? (Math.abs(spent) / budget.amount) * 100 : 0;
+      const remaining = budget.amount - Math.abs(spent);
+      const categoryDetails = getCategoryByName(appCategories, budget.category);
+      return { ...budget, spent: Math.abs(spent), progress: Math.min(progress, 100), remaining, iconKey: categoryDetails?.iconKey || 'Package' };
     })
     .sort((a,b) => (a.progress > b.progress ? -1 : 1)) // Sort by most progress
     .slice(0, 3); // Show top 3 budgets
-  }, [budgets, getCategorySpentAmount]);
+  }, [budgets, getCategorySpentAmount, appCategories]);
 
   const netChangeToday = React.useMemo(() => {
     const today = new Date();
     return transactions
       .filter(t => isSameDay(parseISO(t.date), today))
-      .reduce((sum, t) => sum + t.amount, 0);
-  }, [transactions]);
-
-  const netChangeThisMonth = React.useMemo(() => {
-    return transactions
-      .filter(t => isThisMonth(parseISO(t.date)))
       .reduce((sum, t) => sum + t.amount, 0);
   }, [transactions]);
 
@@ -218,13 +207,13 @@ export default function DashboardPage() {
             {balanceOverTimeData.length > 0 ? (
               <ChartContainer config={{ balance: { label: 'Balance', color: 'hsl(var(--chart-1))' } }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <RechartsPrimitive.LineChart data={balanceOverTimeData} margin={{ top: 5, right: 25, left: -20, bottom: 5 }}>
+                  <LineChart data={balanceOverTimeData} margin={{ top: 5, right: 25, left: -20, bottom: 5 }}>
                     <defs><linearGradient id="balanceGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.8}/><stop offset="95%" stopColor="hsl(var(--chart-1))" stopOpacity={0}/></linearGradient></defs>
                     <Line type="monotone" dataKey="balance" stroke="hsl(var(--chart-1))" strokeWidth={2.5} dot={{ r: 3, strokeWidth:1, fill: 'hsl(var(--background))', stroke: 'hsl(var(--chart-1))' }} activeDot={{r: 5}} fillOpacity={1} fill="url(#balanceGradient)" />
                     <ChartTooltip content={<CustomTooltip />} cursor={{strokeDasharray: '4 4', stroke: 'hsl(var(--muted-foreground))', strokeOpacity: 0.5}} />
-                    <RechartsPrimitive.XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => value} className="text-xs"/>
-                    <RechartsPrimitive.YAxis tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => `$${value/1000}k`} className="text-xs"/>
-                  </RechartsPrimitive.LineChart>
+                    <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => value} className="text-xs"/>
+                    <YAxis tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => `$${value/1000}k`} className="text-xs"/>
+                  </LineChart>
                 </ResponsiveContainer>
               </ChartContainer>
             ) : <p className="text-muted-foreground text-center pt-10">No transaction data for balance chart.</p>}
@@ -233,14 +222,14 @@ export default function DashboardPage() {
 
         <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
           <CardHeader>
-            <CardTitle className="text-lg font-semibold flex items-center"><PieChartIcon className="mr-2 h-5 w-5 text-primary"/>Top Expense Categories</CardTitle>
+            <CardTitle className="text-lg font-semibold flex items-center"><RechartsPieChart className="mr-2 h-5 w-5 text-primary"/>Top Expense Categories</CardTitle>
             <CardDescription>Where your money is going</CardDescription>
           </CardHeader>
           <CardContent className="h-[300px] md:h-[350px] flex items-center justify-center">
             {expenseByCategoryData.length > 0 ? (
               <ChartContainer config={expenseByCategoryData.reduce((acc, entry) => { acc[entry.name] = { label: entry.name, color: entry.fill }; return acc; }, {} as any)}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <RechartsPrimitive.PieChart>
+                  <RechartsPieChart>
                     <Pie data={expenseByCategoryData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius="85%" labelLine={false} label={renderCustomizedLabel}>
                       {expenseByCategoryData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.fill} stroke={"hsl(var(--background))"} strokeWidth={2} className="focus:outline-none hover:opacity-80 transition-opacity"/>
@@ -248,7 +237,7 @@ export default function DashboardPage() {
                     </Pie>
                     <ChartTooltip content={<CustomTooltip />} />
                     <ChartLegend content={<ChartLegendContent nameKey="name" className="text-xs mt-2"/>} />
-                  </RechartsPrimitive.PieChart>
+                  </RechartsPieChart>
                 </ResponsiveContainer>
               </ChartContainer>
             ) : <p className="text-muted-foreground text-center pt-10">No expense data to display.</p>}
@@ -267,7 +256,7 @@ export default function DashboardPage() {
             {budgetHighlights.length > 0 ? budgetHighlights.map(budget => (
               <div key={budget.id} className="space-y-1">
                 <div className="flex justify-between items-center text-sm">
-                  <span className="font-medium flex items-center"><CategoryIcon category={budget.category as CategoryName} className="mr-2 h-4 w-4 text-muted-foreground"/>{budget.category}</span>
+                  <span className="font-medium flex items-center"><CategoryIcon iconKey={budget.iconKey} className="mr-2 h-4 w-4 text-muted-foreground"/>{budget.category}</span>
                   <span className={`${budget.remaining < 0 ? 'text-destructive' : 'text-muted-foreground'}`}>
                     ${budget.spent.toFixed(2)} / ${budget.amount.toFixed(2)}
                   </span>
@@ -292,20 +281,24 @@ export default function DashboardPage() {
             <CardDescription>Your latest transactions</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            {recentTransactions.length > 0 ? recentTransactions.map(t => (
-              <div key={t.id} className="flex items-center justify-between text-sm">
-                <div className="flex items-center">
-                  <CategoryIcon category={t.category as CategoryName} className="mr-2 h-5 w-5 text-muted-foreground"/>
-                  <div>
-                    <p className="font-medium">{t.description}</p>
-                    <p className="text-xs text-muted-foreground">{format(parseISO(t.date), 'MMM dd, yyyy')}</p>
+            {recentTransactions.length > 0 ? recentTransactions.map(t => {
+              const categoryDetails = getCategoryByName(appCategories, t.category);
+              const iconKey = categoryDetails?.iconKey || 'Package';
+              return (
+                <div key={t.id} className="flex items-center justify-between text-sm">
+                  <div className="flex items-center">
+                    <CategoryIcon iconKey={iconKey} className="mr-2 h-5 w-5 text-muted-foreground"/>
+                    <div>
+                      <p className="font-medium">{t.description}</p>
+                      <p className="text-xs text-muted-foreground">{format(parseISO(t.date), 'MMM dd, yyyy')}</p>
+                    </div>
                   </div>
+                  <span className={`font-semibold ${t.type === 'income' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                    {t.type === 'income' ? '+' : '-'}${Math.abs(t.amount).toFixed(2)}
+                  </span>
                 </div>
-                <span className={`font-semibold ${t.type === 'income' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                  {t.type === 'income' ? '+' : '-'}${Math.abs(t.amount).toFixed(2)}
-                </span>
-              </div>
-            )) : <p className="text-muted-foreground text-center">No recent transactions. <Link href="/transactions" className="text-primary hover:underline">Add one now!</Link></p>}
+              );
+            }) : <p className="text-muted-foreground text-center">No recent transactions. <Link href="/transactions" className="text-primary hover:underline">Add one now!</Link></p>}
             {recentTransactions.length > 0 && transactions.length > 5 && (
                 <Button variant="outline" size="sm" className="w-full mt-2" asChild>
                   <Link href="/transactions"><MoreHorizontal className="mr-2 h-4 w-4" /> View All Transactions</Link>

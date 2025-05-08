@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
@@ -20,7 +21,7 @@ import { TransactionForm } from '@/components/forms/TransactionForm';
 import { useAppData } from '@/contexts/AppDataContext';
 import type { Transaction } from '@/types';
 import { PlusCircle, MinusCircle, Edit, Trash2, ArrowUpDown, Filter } from 'lucide-react';
-import { CategoryIcon } from '@/components/shared/CategoryIcon';
+import { CategoryIcon, getCategoryByName } from '@/components/shared/CategoryIcon';
 import { format, parseISO } from 'date-fns';
 import {
   DropdownMenu,
@@ -37,7 +38,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Card, CardContent } from '@/components/ui/card';
 
 export default function TransactionsPage() {
-  const { transactions, deleteTransaction, isLoaded } = useAppData();
+  const { transactions, deleteTransaction, isLoaded, appCategories } = useAppData();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | undefined>(undefined);
   const [formInitialType, setFormInitialType] = useState<'income' | 'expense'>('expense');
@@ -65,13 +66,13 @@ export default function TransactionsPage() {
     setSortConfig({ key, direction });
   };
 
-  const toggleCategoryFilter = (category: string) => {
+  const toggleCategoryFilter = (categoryName: string) => {
     setCategoryFilter(prev => {
       const newSet = new Set(prev);
-      if (newSet.has(category)) {
-        newSet.delete(category);
+      if (newSet.has(categoryName)) {
+        newSet.delete(categoryName);
       } else {
-        newSet.add(category);
+        newSet.add(categoryName);
       }
       return newSet;
     });
@@ -190,15 +191,17 @@ export default function TransactionsPage() {
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Categories</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            {Array.from(new Set(transactions.map(t => t.category))).sort().map(category => (
-              <DropdownMenuCheckboxItem
-                key={category}
-                checked={categoryFilter.has(category)}
-                onCheckedChange={() => toggleCategoryFilter(category)}
-              >
-                {category}
-              </DropdownMenuCheckboxItem>
-            ))}
+            <ScrollArea className="h-[200px]">
+              {appCategories.map(category => (
+                <DropdownMenuCheckboxItem
+                  key={category.id}
+                  checked={categoryFilter.has(category.name)}
+                  onCheckedChange={() => toggleCategoryFilter(category.name)}
+                >
+                  {category.name}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </ScrollArea>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -224,47 +227,51 @@ export default function TransactionsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredAndSortedTransactions.map((transaction) => (
-                  <TableRow key={transaction.id} className="hover:bg-muted/20 transition-colors">
-                    <TableCell>{format(parseISO(transaction.date), 'MMM dd, yyyy')}</TableCell>
-                    <TableCell className="font-medium">{transaction.description}</TableCell>
-                    <TableCell className={`text-right font-semibold ${transaction.type === 'income' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                      {transaction.type === 'income' ? '+' : '-'}${Math.abs(transaction.amount).toFixed(2)}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <CategoryIcon category={transaction.category} className="h-5 w-5 text-muted-foreground" />
-                        {transaction.category}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Button variant="ghost" size="icon" onClick={() => openForm(transaction.type, transaction)} className="text-primary hover:text-primary/80">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                       <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                           <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive/80">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This action cannot be undone. This will permanently delete this transaction.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => deleteTransaction(transaction.id)} className="bg-destructive hover:bg-destructive/90">
-                              Delete
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {filteredAndSortedTransactions.map((transaction) => {
+                  const categoryDetails = getCategoryByName(appCategories, transaction.category);
+                  const iconKey = categoryDetails?.iconKey || 'Package'; // Default icon
+                  return (
+                    <TableRow key={transaction.id} className="hover:bg-muted/20 transition-colors">
+                      <TableCell>{format(parseISO(transaction.date), 'MMM dd, yyyy')}</TableCell>
+                      <TableCell className="font-medium">{transaction.description}</TableCell>
+                      <TableCell className={`text-right font-semibold ${transaction.type === 'income' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                        {transaction.type === 'income' ? '+' : '-'}${Math.abs(transaction.amount).toFixed(2)}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <CategoryIcon iconKey={iconKey} className="h-5 w-5 text-muted-foreground" />
+                          {transaction.category}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Button variant="ghost" size="icon" onClick={() => openForm(transaction.type, transaction)} className="text-primary hover:text-primary/80">
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                         <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                             <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive/80">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This action cannot be undone. This will permanently delete this transaction.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => deleteTransaction(transaction.id)} className="bg-destructive hover:bg-destructive/90">
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
                  {filteredAndSortedTransactions.length === 0 && (searchTerm || categoryFilter.size > 0) && (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center text-muted-foreground">

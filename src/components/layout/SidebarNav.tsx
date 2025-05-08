@@ -1,7 +1,8 @@
+
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, ListChecks, PieChart, Settings, Info, Download, Upload } from 'lucide-react';
+import { LayoutDashboard, ListChecks, PieChart, Settings, Info, Download, Upload, ListOrdered } from 'lucide-react';
 import {
   SidebarMenu,
   SidebarMenuItem,
@@ -14,6 +15,7 @@ const mainNavItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/transactions', label: 'Transactions', icon: ListChecks },
   { href: '/budgets', label: 'Budgets', icon: PieChart },
+  { href: '/categories', label: 'Categories', icon: ListOrdered },
 ];
 
 const utilityNavItems = [

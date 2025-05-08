@@ -21,14 +21,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import type { Budget, CategoryName } from '@/types';
-import { CATEGORIES } from '@/types';
+import type { Budget } from '@/types';
 import { useAppData } from '@/contexts/AppDataContext';
+import { ScrollArea } from '../ui/scroll-area';
 
 const budgetFormSchema = z.object({
-  category: z.enum(CATEGORIES.map(c => c.name) as [CategoryName, ...CategoryName[]], {
-    required_error: "Category is required.",
-  }),
+  category: z.string().min(1, "Category is required."), // Now a string
   amount: z.coerce.number().positive("Amount must be positive."),
 });
 
@@ -40,11 +38,12 @@ interface BudgetFormProps {
 }
 
 export const BudgetForm: React.FC<BudgetFormProps> = ({ budget, onClose }) => {
-  const { addBudget, editBudget } = useAppData();
+  const { addBudget, editBudget, appCategories } = useAppData();
 
   const form = useForm<BudgetFormValues>({
     resolver: zodResolver(budgetFormSchema),
     defaultValues: budget || {
+      category: appCategories.length > 0 ? appCategories[0].name : '',
       amount: 0,
     },
   });
@@ -74,11 +73,13 @@ export const BudgetForm: React.FC<BudgetFormProps> = ({ budget, onClose }) => {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {CATEGORIES.map(cat => (
-                    <SelectItem key={cat.name} value={cat.name}>
+                  <ScrollArea className="h-[200px]">
+                  {appCategories.map(cat => (
+                    <SelectItem key={cat.id} value={cat.name}>
                       {cat.name}
                     </SelectItem>
                   ))}
+                  </ScrollArea>
                 </SelectContent>
               </Select>
               <FormMessage />
@@ -93,7 +94,7 @@ export const BudgetForm: React.FC<BudgetFormProps> = ({ budget, onClose }) => {
             <FormItem>
               <FormLabel>Budget Amount</FormLabel>
               <FormControl>
-                <Input type="number" placeholder="0.00" {...field} />
+                <Input type="number" placeholder="0.00" {...field} step="0.01"/>
               </FormControl>
               <FormMessage />
             </FormItem>
