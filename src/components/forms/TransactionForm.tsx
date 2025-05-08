@@ -25,7 +25,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { CalendarIcon, PlusCircle } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format as formatDateFns, parseISO } from 'date-fns'; // Renamed to avoid conflict
 import type { Transaction, AppCategory } from '@/types';
 import { useAppData } from '@/contexts/AppDataContext';
 import { ScrollArea } from '../ui/scroll-area';
@@ -55,7 +55,7 @@ interface TransactionFormProps {
 }
 
 export const TransactionForm: React.FC<TransactionFormProps> = ({ transaction, initialType, onClose }) => {
-  const { addTransaction, editTransaction, appCategories } = useAppData();
+  const { addTransaction, editTransaction, appCategories, settings, formatDisplayDate } = useAppData(); // Added settings and formatDisplayDate
   const [isCategoryFormOpen, setIsCategoryFormOpen] = useState(false);
 
   const defaultCategory = appCategories.find(c => c.name === 'Other')?.name || (appCategories.length > 0 ? appCategories[0].name : '');
@@ -65,7 +65,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ transaction, i
     defaultValues: transaction 
       ? { 
           ...transaction, 
-          date: new Date(transaction.date),
+          date: parseISO(transaction.date), // Ensure date is a Date object
           amount: Math.abs(transaction.amount) 
         } 
       : {
@@ -99,13 +99,14 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ transaction, i
     
     const transactionData = {
       ...data,
-      date: format(data.date, 'yyyy-MM-dd'), 
+      date: formatDateFns(data.date, 'yyyy-MM-dd'), // Store date in ISO string format
       amount: finalAmount
     };
 
     if (transaction) {
       editTransaction({ ...transactionData, id: transaction.id });
     } else {
+      // The addTransaction function in context will handle the toast with formatted currency and date
       addTransaction(transactionData);
     }
     onClose?.();
@@ -152,7 +153,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ transaction, i
                       )}
                     >
                       {field.value ? (
-                        format(field.value, "PPP")
+                        formatDisplayDate(formatDateFns(field.value, 'yyyy-MM-dd')) // Use formatDisplayDate for preview
                       ) : (
                         <span>Pick a date</span>
                       )}
@@ -196,7 +197,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ transaction, i
           name="amount"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Amount</FormLabel>
+              <FormLabel>Amount ({settings.currency})</FormLabel>
               <FormControl>
                 <Input type="number" placeholder="0.00" {...field} step="0.01" />
               </FormControl>
@@ -217,7 +218,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ transaction, i
                   variant="ghost" 
                   size="sm" 
                   onClick={() => setIsCategoryFormOpen(true)}
-                  className="text-xs px-2 py-1 h-auto"
+                  className="text-xs px-2 py-1 h-auto text-primary hover:text-primary/80"
                 >
                   <PlusCircle className="h-3 w-3 mr-1" /> Add New
                 </Button>
@@ -271,4 +272,3 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ transaction, i
     </Form>
   );
 };
-

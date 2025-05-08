@@ -21,7 +21,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 export default function BudgetsPage() {
-  const { budgets, deleteBudget, getCategorySpentAmount, isLoaded, appCategories } = useAppData();
+  const { budgets, deleteBudget, getCategorySpentAmount, isLoaded, appCategories, formatCurrency } = useAppData();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingBudget, setEditingBudget] = useState<Budget | undefined>(undefined);
 
@@ -45,7 +45,7 @@ export default function BudgetsPage() {
       const spent = getCategorySpentAmount(budget.category);
       const progress = budget.amount > 0 ? (Math.abs(spent) / budget.amount) * 100 : 0;
       const categoryDetails = getCategoryByName(appCategories, budget.category);
-      return { ...budget, spent: Math.abs(spent), progress: Math.min(progress, 100), iconKey: categoryDetails?.iconKey || 'Package' }; // Cap progress at 100%
+      return { ...budget, spent: Math.abs(spent), progress: Math.min(progress, 100), iconKey: categoryDetails?.iconKey || 'Package' };
     }).sort((a, b) => a.category.localeCompare(b.category));
   }, [budgets, getCategorySpentAmount, appCategories]);
 
@@ -89,7 +89,7 @@ export default function BudgetsPage() {
         <h2 className="text-3xl font-bold text-primary">Budgets</h2>
         <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
           <DialogTrigger asChild>
-            <Button onClick={handleAdd} className="bg-accent hover:bg-accent/90 text-accent-foreground">
+            <Button onClick={handleAdd} className="bg-accent hover:bg-accent/90 text-accent-foreground shadow-md hover:shadow-lg transition-shadow">
               <PlusCircle className="mr-2 h-5 w-5" /> Set New Budget
             </Button>
           </DialogTrigger>
@@ -109,7 +109,7 @@ export default function BudgetsPage() {
             </CardContent>
         </Card>
       ) : (
-        <ScrollArea className="h-[calc(100vh-15rem)] md:h-auto"> {/* Adjust height as needed */}
+        <ScrollArea className="h-[calc(100vh-16rem)] md:h-auto">
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {budgetsWithSpent.map((budget) => (
               <Card key={budget.id} className="shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col">
@@ -120,12 +120,12 @@ export default function BudgetsPage() {
                         <CategoryIcon iconKey={budget.iconKey} className="h-6 w-6 text-primary" />
                         {budget.category}
                       </CardTitle>
-                      <CardDescription>Target: ${budget.amount.toFixed(2)}</CardDescription>
+                      <CardDescription>Target: {formatCurrency(budget.amount)}</CardDescription>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent className="flex-grow">
-                  <Progress value={budget.progress} className="w-full h-3 mb-2" 
+                  <Progress value={budget.progress} className="w-full h-3 mb-2 rounded-full" 
                     indicatorClassName={
                         budget.progress > 90 ? 'bg-destructive' : 
                         budget.progress > 70 ? 'bg-yellow-500' : 
@@ -133,21 +133,21 @@ export default function BudgetsPage() {
                     } 
                   />
                   <div className="text-sm text-muted-foreground">
-                    Spent: <span className={`font-semibold ${budget.spent > budget.amount ? 'text-destructive' : 'text-foreground'}`}>${budget.spent.toFixed(2)}</span>
+                    Spent: <span className={`font-semibold ${budget.spent > budget.amount ? 'text-destructive' : 'text-foreground'}`}>{formatCurrency(budget.spent)}</span>
                   </div>
                   <div className="text-sm text-muted-foreground">
                     Remaining: <span className={`font-semibold ${budget.amount - budget.spent < 0 ? 'text-destructive' : 'text-foreground'}`}>
-                      ${(budget.amount - budget.spent).toFixed(2)}
+                      {formatCurrency(budget.amount - budget.spent)}
                       </span>
                   </div>
                 </CardContent>
                 <div className="flex justify-end space-x-1 p-4 border-t">
-                    <Button variant="ghost" size="icon" onClick={() => handleEdit(budget)} className="text-primary hover:text-primary/80">
+                    <Button variant="ghost" size="icon" onClick={() => handleEdit(budget)} className="text-primary hover:text-primary/80 transition-colors">
                       <Edit className="h-4 w-4" />
                     </Button>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive/80">
+                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive/80 transition-colors">
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </AlertDialogTrigger>

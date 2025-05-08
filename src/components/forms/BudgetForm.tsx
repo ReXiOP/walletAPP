@@ -26,7 +26,7 @@ import { useAppData } from '@/contexts/AppDataContext';
 import { ScrollArea } from '../ui/scroll-area';
 
 const budgetFormSchema = z.object({
-  category: z.string().min(1, "Category is required."), // Now a string
+  category: z.string().min(1, "Category is required."),
   amount: z.coerce.number().positive("Amount must be positive."),
 });
 
@@ -38,7 +38,7 @@ interface BudgetFormProps {
 }
 
 export const BudgetForm: React.FC<BudgetFormProps> = ({ budget, onClose }) => {
-  const { addBudget, editBudget, appCategories } = useAppData();
+  const { addBudget, editBudget, appCategories, settings } = useAppData();
 
   const form = useForm<BudgetFormValues>({
     resolver: zodResolver(budgetFormSchema),
@@ -52,6 +52,7 @@ export const BudgetForm: React.FC<BudgetFormProps> = ({ budget, onClose }) => {
     if (budget) {
       editBudget({ ...data, id: budget.id });
     } else {
+      // The addBudget function in context will handle the toast with formatted currency
       addBudget(data);
     }
     onClose?.();
@@ -92,7 +93,7 @@ export const BudgetForm: React.FC<BudgetFormProps> = ({ budget, onClose }) => {
           name="amount"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Budget Amount</FormLabel>
+              <FormLabel>Budget Amount ({settings.currency})</FormLabel>
               <FormControl>
                 <Input type="number" placeholder="0.00" {...field} step="0.01"/>
               </FormControl>

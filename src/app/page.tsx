@@ -2,9 +2,9 @@
 'use client';
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { DollarSign, TrendingUp, TrendingDown, Activity, AlertTriangle, ListChecks, PiggyBank, MoreHorizontal, CheckCircle } from 'lucide-react';
+import { DollarSign, TrendingUp, TrendingDown, Activity, AlertTriangle, ListChecks, PiggyBank, MoreHorizontal, CheckCircle, LineChart as LineChartIcon, PieChart as PieChartIcon } from 'lucide-react';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
-import { Bar, Line, Pie, ResponsiveContainer, Cell, TooltipProps, PieLabelRenderProps, XAxis, YAxis, LineChart as RechartsLineChart, PieChart as RechartsPieChart } from 'recharts'; // Updated LineChart alias
+import { Bar, Line, Pie, ResponsiveContainer, Cell, TooltipProps, PieLabelRenderProps, XAxis, YAxis, LineChart as RechartsLineChart, PieChart as RechartsPieChart } from 'recharts';
 import { useAppData } from '@/contexts/AppDataContext';
 import type { Transaction, Budget } from '@/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -12,7 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { format, parseISO, isSameDay, isThisMonth } from 'date-fns';
+import { parseISO, isSameDay } from 'date-fns'; // format is now handled by context
 import { CategoryIcon, getCategoryByName } from '@/components/shared/CategoryIcon';
 
 const CHART_COLORS_PRIMARY = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
@@ -23,9 +23,10 @@ interface ChartData {
   fill?: string;
 }
 
-const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
+const CustomTooltip = ({ active, payload, label, formatter }: TooltipProps<number, string> & {formatter?: (value: number) => string}) => {
   if (active && payload && payload.length) {
     const data = payload[0];
+    const displayValue = formatter && data.value !== undefined ? formatter(data.value) : `$${data.value?.toFixed(2)}`;
     return (
       <div className="rounded-lg border bg-background p-2.5 shadow-sm">
         <div className="flex flex-col">
@@ -33,7 +34,7 @@ const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>)
             {label || data.name}
           </span>
           <span className="font-bold text-lg text-foreground">
-            ${data.value?.toFixed(2)}
+            {displayValue}
           </span>
         </div>
       </div>
@@ -45,7 +46,7 @@ const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>)
 const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: PieLabelRenderProps ) => {
   if (percent === undefined || midAngle === undefined || innerRadius === undefined || outerRadius === undefined || cx === undefined || cy === undefined ) return null;
   const RADIAN = Math.PI / 180;
-  const radius = innerRadius + (outerRadius - innerRadius) * 0.6; // Place label further inside
+  const radius = innerRadius + (outerRadius - innerRadius) * 0.6; 
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
   const textAnchor = x > cx ? 'start' : 'end';
@@ -60,7 +61,10 @@ const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, per
 };
 
 export default function DashboardPage() {
-  const { transactions, budgets, totalIncome, totalExpenses, currentBalance, getCategorySpentAmount, isLoaded, appCategories } = useAppData();
+  const { 
+    transactions, budgets, totalIncome, totalExpenses, currentBalance, 
+    getCategorySpentAmount, isLoaded, appCategories, formatCurrency, formatDisplayDate 
+  } = useAppData();
 
   const expenseByCategoryData = React.useMemo(() => {
     const categoryMap: Record<string, number> = {};
@@ -72,7 +76,7 @@ export default function DashboardPage() {
     return Object.entries(categoryMap)
       .map(([name, value], index) => ({ name, value, fill: CHART_COLORS_PRIMARY[index % CHART_COLORS_PRIMARY.length] }))
       .sort((a, b) => b.value - a.value)
-      .slice(0, 5); // Show top 5 categories
+      .slice(0, 5);
   }, [transactions]);
 
   const balanceOverTimeData = React.useMemo(() => {
@@ -83,11 +87,11 @@ export default function DashboardPage() {
     
     sortedTransactions.forEach(t => {
       runningBalance += t.amount; 
-      dataMap.set(format(parseISO(t.date), 'MMM dd'), runningBalance); // Format date for X-axis
+      dataMap.set(formatDisplayDate(t.date).split(',')[0], runningBalance); // Show short date e.g. "MMM dd"
     });
     
     return Array.from(dataMap.entries()).map(([date, balance]) => ({ date, balance }));
-  }, [transactions]);
+  }, [transactions, formatDisplayDate]);
 
   const recentTransactions = React.useMemo(() => {
     return [...transactions]
@@ -103,8 +107,8 @@ export default function DashboardPage() {
       const categoryDetails = getCategoryByName(appCategories, budget.category);
       return { ...budget, spent: Math.abs(spent), progress: Math.min(progress, 100), remaining, iconKey: categoryDetails?.iconKey || 'Package' };
     })
-    .sort((a,b) => (a.progress > b.progress ? -1 : 1)) // Sort by most progress
-    .slice(0, 3); // Show top 3 budgets
+    .sort((a,b) => (a.progress > b.progress ? -1 : 1)) 
+    .slice(0, 3);
   }, [budgets, getCategorySpentAmount, appCategories]);
 
   const netChangeToday = React.useMemo(() => {
@@ -145,7 +149,6 @@ export default function DashboardPage() {
   return (
     <ScrollArea className="h-full">
     <div className="space-y-6">
-      {/* Quick Stats Row */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -153,7 +156,7 @@ export default function DashboardPage() {
             <DollarSign className="h-5 w-5 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">${currentBalance.toFixed(2)}</div>
+            <div className="text-3xl font-bold">{formatCurrency(currentBalance)}</div>
             <p className={`text-xs ${currentBalance >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
               {currentBalance >=0 ? "Looking good!" : "Caution advised!"}
             </p>
@@ -166,7 +169,7 @@ export default function DashboardPage() {
             <TrendingUp className="h-5 w-5 text-green-600 dark:text-green-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">${totalIncome.toFixed(2)}</div>
+            <div className="text-3xl font-bold">{formatCurrency(totalIncome)}</div>
             <p className="text-xs text-muted-foreground">Overall earnings</p>
           </CardContent>
         </Card>
@@ -177,7 +180,7 @@ export default function DashboardPage() {
             <TrendingDown className="h-5 w-5 text-red-600 dark:text-red-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">${Math.abs(totalExpenses).toFixed(2)}</div>
+            <div className="text-3xl font-bold">{formatCurrency(Math.abs(totalExpenses))}</div>
             <p className="text-xs text-muted-foreground">Overall spending</p>
           </CardContent>
         </Card>
@@ -189,30 +192,29 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className={`text-3xl font-bold ${netChangeToday >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-              {netChangeToday >= 0 ? '+' : '-'}${Math.abs(netChangeToday).toFixed(2)}
+              {netChangeToday >= 0 ? '+' : ''}{formatCurrency(netChangeToday)}
             </div>
             <p className="text-xs text-muted-foreground">Today's financial movement</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Charts Row */}
       <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
         <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
           <CardHeader>
-            <CardTitle className="text-lg font-semibold flex items-center"><RechartsLineChart className="mr-2 h-5 w-5 text-primary"/>Balance Over Time</CardTitle>
+            <CardTitle className="text-lg font-semibold flex items-center"><LineChartIcon className="mr-2 h-5 w-5 text-primary"/>Balance Over Time</CardTitle>
             <CardDescription>Track your financial progress</CardDescription>
           </CardHeader>
           <CardContent className="h-[300px] md:h-[350px]">
             {balanceOverTimeData.length > 0 ? (
               <ChartContainer config={{ balance: { label: 'Balance', color: 'hsl(var(--chart-1))' } }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <RechartsLineChart data={balanceOverTimeData} margin={{ top: 5, right: 25, left: -20, bottom: 5 }}>
+                  <RechartsLineChart data={balanceOverTimeData} margin={{ top: 5, right: 25, left: -10, bottom: 5 }}>
                     <defs><linearGradient id="balanceGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.8}/><stop offset="95%" stopColor="hsl(var(--chart-1))" stopOpacity={0}/></linearGradient></defs>
                     <Line type="monotone" dataKey="balance" stroke="hsl(var(--chart-1))" strokeWidth={2.5} dot={{ r: 3, strokeWidth:1, fill: 'hsl(var(--background))', stroke: 'hsl(var(--chart-1))' }} activeDot={{r: 5}} fillOpacity={1} fill="url(#balanceGradient)" />
-                    <ChartTooltip content={<CustomTooltip />} cursor={{strokeDasharray: '4 4', stroke: 'hsl(var(--muted-foreground))', strokeOpacity: 0.5}} />
+                    <ChartTooltip content={<CustomTooltip formatter={formatCurrency} />} cursor={{strokeDasharray: '4 4', stroke: 'hsl(var(--muted-foreground))', strokeOpacity: 0.5}} />
                     <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => value} className="text-xs"/>
-                    <YAxis tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => `$${value/1000}k`} className="text-xs"/>
+                    <YAxis tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => formatCurrency(value).replace(/\.00$/, '')} className="text-xs"/>
                   </RechartsLineChart>
                 </ResponsiveContainer>
               </ChartContainer>
@@ -222,7 +224,7 @@ export default function DashboardPage() {
 
         <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
           <CardHeader>
-            <CardTitle className="text-lg font-semibold flex items-center"><RechartsPieChart className="mr-2 h-5 w-5 text-primary"/>Top Expense Categories</CardTitle>
+            <CardTitle className="text-lg font-semibold flex items-center"><PieChartIcon className="mr-2 h-5 w-5 text-primary"/>Top Expense Categories</CardTitle>
             <CardDescription>Where your money is going</CardDescription>
           </CardHeader>
           <CardContent className="h-[300px] md:h-[350px] flex items-center justify-center">
@@ -235,7 +237,7 @@ export default function DashboardPage() {
                         <Cell key={`cell-${index}`} fill={entry.fill} stroke={"hsl(var(--background))"} strokeWidth={2} className="focus:outline-none hover:opacity-80 transition-opacity"/>
                       ))}
                     </Pie>
-                    <ChartTooltip content={<CustomTooltip />} />
+                    <ChartTooltip content={<CustomTooltip formatter={formatCurrency} />} />
                     <ChartLegend content={<ChartLegendContent nameKey="name" className="text-xs mt-2"/>} />
                   </RechartsPieChart>
                 </ResponsiveContainer>
@@ -245,7 +247,6 @@ export default function DashboardPage() {
         </Card>
       </div>
       
-      {/* Budget Highlights and Recent Activity Row */}
       <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
         <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
           <CardHeader>
@@ -258,7 +259,7 @@ export default function DashboardPage() {
                 <div className="flex justify-between items-center text-sm">
                   <span className="font-medium flex items-center"><CategoryIcon iconKey={budget.iconKey} className="mr-2 h-4 w-4 text-muted-foreground"/>{budget.category}</span>
                   <span className={`${budget.remaining < 0 ? 'text-destructive' : 'text-muted-foreground'}`}>
-                    ${budget.spent.toFixed(2)} / ${budget.amount.toFixed(2)}
+                    {formatCurrency(budget.spent)} / {formatCurrency(budget.amount)}
                   </span>
                 </div>
                 <Progress value={budget.progress} className="h-2" indicatorClassName={
@@ -290,11 +291,11 @@ export default function DashboardPage() {
                     <CategoryIcon iconKey={iconKey} className="mr-2 h-5 w-5 text-muted-foreground"/>
                     <div>
                       <p className="font-medium">{t.description}</p>
-                      <p className="text-xs text-muted-foreground">{format(parseISO(t.date), 'MMM dd, yyyy')}</p>
+                      <p className="text-xs text-muted-foreground">{formatDisplayDate(t.date)}</p>
                     </div>
                   </div>
                   <span className={`font-semibold ${t.type === 'income' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                    {t.type === 'income' ? '+' : '-'}${Math.abs(t.amount).toFixed(2)}
+                    {t.type === 'income' ? '+' : ''}{formatCurrency(Math.abs(t.amount))}
                   </span>
                 </div>
               );
@@ -325,4 +326,3 @@ export default function DashboardPage() {
     </ScrollArea>
   );
 }
-

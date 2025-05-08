@@ -22,7 +22,7 @@ import { useAppData } from '@/contexts/AppDataContext';
 import type { Transaction } from '@/types';
 import { PlusCircle, MinusCircle, Edit, Trash2, ArrowUpDown, Filter } from 'lucide-react';
 import { CategoryIcon, getCategoryByName } from '@/components/shared/CategoryIcon';
-import { format, parseISO } from 'date-fns';
+import { parseISO } from 'date-fns'; // format is now handled by context
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -38,7 +38,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Card, CardContent } from '@/components/ui/card';
 
 export default function TransactionsPage() {
-  const { transactions, deleteTransaction, isLoaded, appCategories } = useAppData();
+  const { transactions, deleteTransaction, isLoaded, appCategories, formatCurrency, formatDisplayDate } = useAppData();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | undefined>(undefined);
   const [formInitialType, setFormInitialType] = useState<'income' | 'expense'>('expense');
@@ -157,7 +157,6 @@ export default function TransactionsPage() {
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
         <h2 className="text-3xl font-bold text-primary">Transactions</h2>
         <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-          {/* DialogTrigger will be handled by individual buttons */}
           <DialogContent className="sm:max-w-[480px]">
             <DialogHeader>
               <DialogTitle>{editingTransaction ? 'Edit Transaction' : (formInitialType === 'income' ? 'Add New Income' : 'Add New Expense')}</DialogTitle>
@@ -166,10 +165,10 @@ export default function TransactionsPage() {
           </DialogContent>
         </Dialog>
         <div className="flex gap-2">
-          <Button onClick={() => openForm('income')} className="bg-green-600 hover:bg-green-700 text-white">
+          <Button onClick={() => openForm('income')} className="bg-green-600 hover:bg-green-700 text-white shadow-md hover:shadow-lg transition-shadow">
             <PlusCircle className="mr-2 h-5 w-5" /> Add Income
           </Button>
-          <Button onClick={() => openForm('expense')} className="bg-red-600 hover:bg-red-700 text-white">
+          <Button onClick={() => openForm('expense')} className="bg-red-600 hover:bg-red-700 text-white shadow-md hover:shadow-lg transition-shadow">
             <MinusCircle className="mr-2 h-5 w-5" /> Add Expense
           </Button>
         </div>
@@ -180,15 +179,15 @@ export default function TransactionsPage() {
           placeholder="Search transactions..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="max-w-sm"
+          className="max-w-sm shadow-sm focus:shadow-md transition-shadow"
         />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="ml-auto">
+            <Button variant="outline" className="ml-auto shadow-sm hover:shadow-md transition-shadow">
               <Filter className="mr-2 h-4 w-4" /> Filter by Category
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent align="end" className="shadow-lg">
             <DropdownMenuLabel>Categories</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <ScrollArea className="h-[200px]">
@@ -213,43 +212,43 @@ export default function TransactionsPage() {
             </CardContent>
         </Card>
       ) : (
-        <Card className="shadow-lg">
+        <Card className="shadow-lg overflow-hidden">
           <CardContent className="p-0">
-          <ScrollArea className="h-[calc(100vh-22rem)] md:h-auto"> {/* Adjusted height */}
+          <ScrollArea className="h-[calc(100vh-24rem)] md:h-auto"> 
             <Table>
-              <TableHeader>
+              <TableHeader className="bg-muted/30">
                 <TableRow>
-                  <TableHead className="group cursor-pointer hover:bg-muted/50" onClick={() => requestSort('date')}>Date {getSortIndicator('date')}</TableHead>
-                  <TableHead className="group cursor-pointer hover:bg-muted/50" onClick={() => requestSort('description')}>Description {getSortIndicator('description')}</TableHead>
-                  <TableHead className="text-right group cursor-pointer hover:bg-muted/50" onClick={() => requestSort('amount')}>Amount {getSortIndicator('amount')}</TableHead>
-                  <TableHead className="group cursor-pointer hover:bg-muted/50" onClick={() => requestSort('category')}>Category {getSortIndicator('category')}</TableHead>
-                  <TableHead className="text-center">Actions</TableHead>
+                  <TableHead className="group cursor-pointer hover:bg-muted/50 p-3" onClick={() => requestSort('date')}>Date {getSortIndicator('date')}</TableHead>
+                  <TableHead className="group cursor-pointer hover:bg-muted/50 p-3" onClick={() => requestSort('description')}>Description {getSortIndicator('description')}</TableHead>
+                  <TableHead className="text-right group cursor-pointer hover:bg-muted/50 p-3" onClick={() => requestSort('amount')}>Amount {getSortIndicator('amount')}</TableHead>
+                  <TableHead className="group cursor-pointer hover:bg-muted/50 p-3" onClick={() => requestSort('category')}>Category {getSortIndicator('category')}</TableHead>
+                  <TableHead className="text-center p-3">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredAndSortedTransactions.map((transaction) => {
                   const categoryDetails = getCategoryByName(appCategories, transaction.category);
-                  const iconKey = categoryDetails?.iconKey || 'Package'; // Default icon
+                  const iconKey = categoryDetails?.iconKey || 'Package';
                   return (
-                    <TableRow key={transaction.id} className="hover:bg-muted/20 transition-colors">
-                      <TableCell>{format(parseISO(transaction.date), 'MMM dd, yyyy')}</TableCell>
-                      <TableCell className="font-medium">{transaction.description}</TableCell>
-                      <TableCell className={`text-right font-semibold ${transaction.type === 'income' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                        {transaction.type === 'income' ? '+' : '-'}${Math.abs(transaction.amount).toFixed(2)}
+                    <TableRow key={transaction.id} className="hover:bg-muted/20 transition-colors duration-150">
+                      <TableCell className="p-3">{formatDisplayDate(transaction.date)}</TableCell>
+                      <TableCell className="font-medium p-3">{transaction.description}</TableCell>
+                      <TableCell className={`text-right font-semibold p-3 ${transaction.type === 'income' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                        {transaction.type === 'income' ? '+' : ''}{formatCurrency(Math.abs(transaction.amount))}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="p-3">
                         <div className="flex items-center gap-2">
                           <CategoryIcon iconKey={iconKey} className="h-5 w-5 text-muted-foreground" />
                           {transaction.category}
                         </div>
                       </TableCell>
-                      <TableCell className="text-center">
-                        <Button variant="ghost" size="icon" onClick={() => openForm(transaction.type, transaction)} className="text-primary hover:text-primary/80">
+                      <TableCell className="text-center p-3">
+                        <Button variant="ghost" size="icon" onClick={() => openForm(transaction.type, transaction)} className="text-primary hover:text-primary/80 transition-colors">
                           <Edit className="h-4 w-4" />
                         </Button>
                          <AlertDialog>
                           <AlertDialogTrigger asChild>
-                             <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive/80">
+                             <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive/80 transition-colors">
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </AlertDialogTrigger>
@@ -274,7 +273,7 @@ export default function TransactionsPage() {
                 })}
                  {filteredAndSortedTransactions.length === 0 && (searchTerm || categoryFilter.size > 0) && (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground">
+                    <TableCell colSpan={5} className="text-center text-muted-foreground p-4">
                       No transactions match your current filters.
                     </TableCell>
                   </TableRow>
