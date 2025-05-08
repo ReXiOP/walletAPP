@@ -1,6 +1,6 @@
 
 'use client';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -22,13 +22,17 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, PlusCircle } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import type { Transaction } from '@/types';
+import type { Transaction, AppCategory } from '@/types';
 import { useAppData } from '@/contexts/AppDataContext';
 import { ScrollArea } from '../ui/scroll-area';
+import { CategoryIcon } from '@/components/shared/CategoryIcon';
+import { CategoryForm } from './CategoryForm';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+
 
 const transactionFormSchema = z.object({
   date: z.date({
@@ -36,7 +40,7 @@ const transactionFormSchema = z.object({
   }),
   description: z.string().min(1, "Description is required.").max(100, "Description is too long."),
   amount: z.coerce.number().positive("Amount must be positive."),
-  category: z.string().min(1, "Category is required."), // Now a string
+  category: z.string().min(1, "Category is required."), 
   type: z.enum(['income', 'expense'], {
     required_error: "Type is required.",
   }),
@@ -52,6 +56,7 @@ interface TransactionFormProps {
 
 export const TransactionForm: React.FC<TransactionFormProps> = ({ transaction, initialType, onClose }) => {
   const { addTransaction, editTransaction, appCategories } = useAppData();
+  const [isCategoryFormOpen, setIsCategoryFormOpen] = useState(false);
 
   const defaultCategory = appCategories.find(c => c.name === 'Other')?.name || (appCategories.length > 0 ? appCategories[0].name : '');
 
@@ -94,7 +99,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ transaction, i
     
     const transactionData = {
       ...data,
-      date: format(data.date, 'yyyy-MM-dd'), // Store date as YYYY-MM-DD string
+      date: format(data.date, 'yyyy-MM-dd'), 
       amount: finalAmount
     };
 
@@ -115,7 +120,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ transaction, i
           render={({ field }) => (
             <FormItem>
               <FormLabel>Type</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Select type" />
@@ -205,8 +210,19 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ transaction, i
           name="category"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Category</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <div className="flex justify-between items-center mb-1">
+                <FormLabel>Category</FormLabel>
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setIsCategoryFormOpen(true)}
+                  className="text-xs px-2 py-1 h-auto"
+                >
+                  <PlusCircle className="h-3 w-3 mr-1" /> Add New
+                </Button>
+              </div>
+              <Select onValueChange={field.onChange} value={field.value || ''}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Select a category" />
@@ -216,7 +232,10 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ transaction, i
                   <ScrollArea className="h-[200px]">
                   {appCategories.map(cat => (
                     <SelectItem key={cat.id} value={cat.name}>
-                      {cat.name}
+                      <div className="flex items-center gap-2">
+                        <CategoryIcon iconKey={cat.iconKey} className="h-4 w-4" />
+                        {cat.name}
+                      </div>
                     </SelectItem>
                   ))}
                   </ScrollArea>
@@ -233,6 +252,23 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ transaction, i
           </Button>
         </div>
       </form>
+
+      <Dialog open={isCategoryFormOpen} onOpenChange={setIsCategoryFormOpen}>
+        <DialogContent className="sm:max-w-[480px]">
+          <DialogHeader>
+            <DialogTitle>Add New Category</DialogTitle>
+          </DialogHeader>
+          <CategoryForm
+            onClose={(addedCategory?: AppCategory) => {
+              setIsCategoryFormOpen(false);
+              if (addedCategory) {
+                form.setValue('category', addedCategory.name, { shouldValidate: true, shouldDirty: true });
+              }
+            }}
+          />
+        </DialogContent>
+      </Dialog>
     </Form>
   );
 };
+

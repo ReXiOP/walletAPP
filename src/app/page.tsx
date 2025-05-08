@@ -4,7 +4,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { DollarSign, TrendingUp, TrendingDown, Activity, AlertTriangle, ListChecks, PiggyBank, MoreHorizontal, CheckCircle } from 'lucide-react';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
-import { Bar, Line, Pie, ResponsiveContainer, Cell, TooltipProps, PieLabelRenderProps, XAxis, YAxis, LineChart, PieChart as RechartsPieChart } from 'recharts';
+import { Bar, Line, Pie, ResponsiveContainer, Cell, TooltipProps, PieLabelRenderProps, XAxis, YAxis, LineChart as RechartsLineChart, PieChart as RechartsPieChart } from 'recharts'; // Updated LineChart alias
 import { useAppData } from '@/contexts/AppDataContext';
 import type { Transaction, Budget } from '@/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -200,20 +200,20 @@ export default function DashboardPage() {
       <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
         <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
           <CardHeader>
-            <CardTitle className="text-lg font-semibold flex items-center"><LineChart className="mr-2 h-5 w-5 text-primary"/>Balance Over Time</CardTitle>
+            <CardTitle className="text-lg font-semibold flex items-center"><RechartsLineChart className="mr-2 h-5 w-5 text-primary"/>Balance Over Time</CardTitle>
             <CardDescription>Track your financial progress</CardDescription>
           </CardHeader>
           <CardContent className="h-[300px] md:h-[350px]">
             {balanceOverTimeData.length > 0 ? (
               <ChartContainer config={{ balance: { label: 'Balance', color: 'hsl(var(--chart-1))' } }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={balanceOverTimeData} margin={{ top: 5, right: 25, left: -20, bottom: 5 }}>
+                  <RechartsLineChart data={balanceOverTimeData} margin={{ top: 5, right: 25, left: -20, bottom: 5 }}>
                     <defs><linearGradient id="balanceGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.8}/><stop offset="95%" stopColor="hsl(var(--chart-1))" stopOpacity={0}/></linearGradient></defs>
                     <Line type="monotone" dataKey="balance" stroke="hsl(var(--chart-1))" strokeWidth={2.5} dot={{ r: 3, strokeWidth:1, fill: 'hsl(var(--background))', stroke: 'hsl(var(--chart-1))' }} activeDot={{r: 5}} fillOpacity={1} fill="url(#balanceGradient)" />
                     <ChartTooltip content={<CustomTooltip />} cursor={{strokeDasharray: '4 4', stroke: 'hsl(var(--muted-foreground))', strokeOpacity: 0.5}} />
                     <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => value} className="text-xs"/>
                     <YAxis tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => `$${value/1000}k`} className="text-xs"/>
-                  </LineChart>
+                  </RechartsLineChart>
                 </ResponsiveContainer>
               </ChartContainer>
             ) : <p className="text-muted-foreground text-center pt-10">No transaction data for balance chart.</p>}
@@ -325,3 +325,4 @@ export default function DashboardPage() {
     </ScrollArea>
   );
 }
+

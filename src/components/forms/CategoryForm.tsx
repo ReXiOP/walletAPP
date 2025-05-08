@@ -22,8 +22,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useAppData } from '@/contexts/AppDataContext';
-import { AVAILABLE_ICONS, CategoryIcon } from '@/components/shared/CategoryIcon'; // Assuming CategoryIcon exports AVAILABLE_ICONS
+import { AVAILABLE_ICONS, CategoryIcon } from '@/components/shared/CategoryIcon'; 
 import { ScrollArea } from '../ui/scroll-area';
+import type { AppCategory } from '@/types';
 
 const categoryFormSchema = z.object({
   name: z.string().min(1, "Category name is required.").max(50, "Category name is too long."),
@@ -33,7 +34,7 @@ const categoryFormSchema = z.object({
 type CategoryFormValues = z.infer<typeof categoryFormSchema>;
 
 interface CategoryFormProps {
-  onClose?: () => void;
+  onClose?: (newlyAddedCategory?: AppCategory) => void;
 }
 
 export const CategoryForm: React.FC<CategoryFormProps> = ({ onClose }) => {
@@ -49,8 +50,8 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({ onClose }) => {
   });
 
   const onSubmit = (data: CategoryFormValues) => {
-    addAppCategory(data.name, data.iconKey);
-    onClose?.();
+    const newCategory = addAppCategory(data.name, data.iconKey);
+    onClose?.(newCategory);
   };
 
   return (
@@ -103,7 +104,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({ onClose }) => {
           )}
         />
         <div className="flex justify-end space-x-2">
-          {onClose && <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>}
+          {onClose && <Button type="button" variant="outline" onClick={() => onClose?.()}>Cancel</Button>}
           <Button type="submit" className="bg-primary hover:bg-primary/90 text-primary-foreground">
             Add Category
           </Button>
@@ -112,3 +113,4 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({ onClose }) => {
     </Form>
   );
 };
+

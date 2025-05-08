@@ -16,7 +16,7 @@ interface AppDataContextType {
   addBudget: (budget: Omit<Budget, 'id'>) => void;
   editBudget: (budget: Budget) => void;
   deleteBudget: (id: string) => void;
-  addAppCategory: (name: string, iconKey: string) => void;
+  addAppCategory: (name: string, iconKey: string) => AppCategory | undefined; // Modified return type
   deleteAppCategory: (id: string) => void; // Only for user-defined categories
   getCategorySpentAmount: (categoryName: string) => number;
   totalIncome: number;
@@ -126,14 +126,15 @@ export const AppDataProvider = ({ children }: { children: ReactNode }) => {
       .reduce((sum, t) => sum + Math.abs(t.amount), 0); // Ensure using absolute amount for expenses
   }, [transactions]);
 
-  const addAppCategory = useCallback((name: string, iconKey: string) => {
+  const addAppCategory = useCallback((name: string, iconKey: string): AppCategory | undefined => {
     if (appCategories.some(cat => cat.name.toLowerCase() === name.toLowerCase())) {
       toast({ title: "Error", description: `Category "${name}" already exists.`, variant: "destructive" });
-      return;
+      return undefined;
     }
     const newCategory: AppCategory = { id: crypto.randomUUID(), name, iconKey, isUserDefined: true };
     setAppCategories(prev => [...prev, newCategory].sort((a,b) => a.name.localeCompare(b.name)));
     toast({ title: "Category added", description: `Category "${name}" created.` });
+    return newCategory;
   }, [appCategories, toast]);
 
   const deleteAppCategory = useCallback((id: string) => {
@@ -234,3 +235,4 @@ export const useAppData = () => {
   }
   return context;
 };
+
