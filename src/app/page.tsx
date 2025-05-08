@@ -2,7 +2,7 @@
 'use client';
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { DollarSign, TrendingUp, TrendingDown, Activity, AlertTriangle, ListChecks, PiggyBank, MoreHorizontal, CheckCircle, LineChart as LineChartIcon, PieChart as PieChartIcon } from 'lucide-react';
+import { DollarSign, TrendingUp, TrendingDown, Activity, AlertTriangle, ListChecks, PiggyBank, MoreHorizontal, CheckCircle, LineChart as LineChartIcon, PieChart as PieChartIcon, PlusCircle } from 'lucide-react';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
 import { Bar, Line, Pie, ResponsiveContainer, Cell, TooltipProps, PieLabelRenderProps, XAxis, YAxis, LineChart as RechartsLineChart, PieChart as RechartsPieChart } from 'recharts';
 import { useAppData } from '@/contexts/AppDataContext';

@@ -26,6 +26,11 @@ const CURRENCIES = [
   { value: 'NZD', label: 'NZD ($) - New Zealand Dollar' },
   { value: 'BRL', label: 'BRL (R$) - Brazilian Real' },
   { value: 'ZAR', label: 'ZAR (R) - South African Rand' },
+  { value: 'SGD', label: 'SGD ($) - Singapore Dollar' },
+  { value: 'HKD', label: 'HKD ($) - Hong Kong Dollar' },
+  { value: 'bdt', label: 'BDT (৳) - Bangladeshi Taka' },
+  { value: 'AED', label: 'AED (د.إ) - United Arab Emirates Dirham' },
+  { value: 'ARS', label: 'ARS ($) - Argentine Peso'}
 ];
 
 const DATE_FORMATS = [
