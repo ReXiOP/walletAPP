@@ -1,13 +1,12 @@
-
 'use client';
 import React from 'react';
 import { useCustomTheme } from '@/contexts/ThemeContext';
 import { Button } from '@/components/ui/button';
-import { Moon, Sun, Menu } from 'lucide-react';
-import { SidebarTrigger } from '@/components/ui/sidebar'; // Assuming SidebarTrigger exists
+import { Moon, Sun } from 'lucide-react';
+import { SidebarTrigger } from '@/components/ui/sidebar';
 
 export function AppHeader() {
-  const { theme, toggleTheme } = useCustomTheme();
+  const { effectiveTheme, toggleEffectiveTheme } = useCustomTheme();
 
   return (
     <div className="flex items-center justify-between w-full p-4 border-b">
@@ -22,8 +21,8 @@ export function AppHeader() {
         </svg>
         <h1 className="text-xl font-bold text-primary">BudgetZen</h1>
       </div>
-      <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label="Toggle theme">
-        {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+      <Button variant="ghost" size="icon" onClick={toggleEffectiveTheme} aria-label="Toggle theme">
+        {effectiveTheme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
       </Button>
     </div>
   );

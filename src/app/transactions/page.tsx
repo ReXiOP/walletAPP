@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
@@ -20,7 +19,7 @@ import {
 import { TransactionForm } from '@/components/forms/TransactionForm';
 import { useAppData } from '@/contexts/AppDataContext';
 import type { Transaction } from '@/types';
-import { PlusCircle, Edit, Trash2, ArrowUpDown, Filter } from 'lucide-react';
+import { PlusCircle, MinusCircle, Edit, Trash2, ArrowUpDown, Filter } from 'lucide-react';
 import { CategoryIcon } from '@/components/shared/CategoryIcon';
 import { format, parseISO } from 'date-fns';
 import {
@@ -35,23 +34,21 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-
+import { Card, CardContent } from '@/components/ui/card';
 
 export default function TransactionsPage() {
   const { transactions, deleteTransaction, isLoaded } = useAppData();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | undefined>(undefined);
+  const [formInitialType, setFormInitialType] = useState<'income' | 'expense'>('expense');
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState<{ key: keyof Transaction | null; direction: 'ascending' | 'descending' }>({ key: 'date', direction: 'descending' });
   const [categoryFilter, setCategoryFilter] = useState<Set<string>>(new Set());
 
-  const handleAdd = () => {
-    setEditingTransaction(undefined);
-    setIsFormOpen(true);
-  };
-
-  const handleEdit = (transaction: Transaction) => {
+  const openForm = (type: 'income' | 'expense', transaction?: Transaction) => {
     setEditingTransaction(transaction);
+    setFormInitialType(type);
     setIsFormOpen(true);
   };
 
@@ -126,7 +123,10 @@ export default function TransactionsPage() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <Skeleton className="h-10 w-40" />
-          <Skeleton className="h-10 w-32" />
+          <div className="flex gap-2">
+            <Skeleton className="h-10 w-32" />
+            <Skeleton className="h-10 w-32" />
+          </div>
         </div>
         <Skeleton className="h-10 w-full mb-4" />
         <Card className="shadow-lg">
@@ -151,24 +151,27 @@ export default function TransactionsPage() {
     );
   }
 
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
         <h2 className="text-3xl font-bold text-primary">Transactions</h2>
         <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={handleAdd} className="bg-accent hover:bg-accent/90 text-accent-foreground">
-              <PlusCircle className="mr-2 h-5 w-5" /> Add Transaction
-            </Button>
-          </DialogTrigger>
+          {/* DialogTrigger will be handled by individual buttons */}
           <DialogContent className="sm:max-w-[480px]">
             <DialogHeader>
-              <DialogTitle>{editingTransaction ? 'Edit Transaction' : 'Add New Transaction'}</DialogTitle>
+              <DialogTitle>{editingTransaction ? 'Edit Transaction' : (formInitialType === 'income' ? 'Add New Income' : 'Add New Expense')}</DialogTitle>
             </DialogHeader>
-            <TransactionForm transaction={editingTransaction} onClose={closeForm} />
+            <TransactionForm transaction={editingTransaction} initialType={formInitialType} onClose={closeForm} />
           </DialogContent>
         </Dialog>
+        <div className="flex gap-2">
+          <Button onClick={() => openForm('income')} className="bg-green-600 hover:bg-green-700 text-white">
+            <PlusCircle className="mr-2 h-5 w-5" /> Add Income
+          </Button>
+          <Button onClick={() => openForm('expense')} className="bg-red-600 hover:bg-red-700 text-white">
+            <MinusCircle className="mr-2 h-5 w-5" /> Add Expense
+          </Button>
+        </div>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4 mb-4">
@@ -203,13 +206,13 @@ export default function TransactionsPage() {
       {filteredAndSortedTransactions.length === 0 && !searchTerm && categoryFilter.size === 0 ? (
          <Card className="shadow-lg">
             <CardContent className="pt-6">
-              <p className="text-center text-muted-foreground">No transactions recorded yet. Click "Add Transaction" to get started!</p>
+              <p className="text-center text-muted-foreground">No transactions recorded yet. Click "Add Income" or "Add Expense" to get started!</p>
             </CardContent>
         </Card>
       ) : (
         <Card className="shadow-lg">
           <CardContent className="p-0">
-          <ScrollArea className="h-[calc(100vh-20rem)] md:h-auto"> {/* Adjust height as needed */}
+          <ScrollArea className="h-[calc(100vh-22rem)] md:h-auto"> {/* Adjusted height */}
             <Table>
               <TableHeader>
                 <TableRow>
@@ -225,8 +228,8 @@ export default function TransactionsPage() {
                   <TableRow key={transaction.id} className="hover:bg-muted/20 transition-colors">
                     <TableCell>{format(parseISO(transaction.date), 'MMM dd, yyyy')}</TableCell>
                     <TableCell className="font-medium">{transaction.description}</TableCell>
-                    <TableCell className={`text-right font-semibold ${transaction.amount >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                      {transaction.amount >= 0 ? '+' : '-'}${Math.abs(transaction.amount).toFixed(2)}
+                    <TableCell className={`text-right font-semibold ${transaction.type === 'income' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                      {transaction.type === 'income' ? '+' : '-'}${Math.abs(transaction.amount).toFixed(2)}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -235,7 +238,7 @@ export default function TransactionsPage() {
                       </div>
                     </TableCell>
                     <TableCell className="text-center">
-                      <Button variant="ghost" size="icon" onClick={() => handleEdit(transaction)} className="text-primary hover:text-primary/80">
+                      <Button variant="ghost" size="icon" onClick={() => openForm(transaction.type, transaction)} className="text-primary hover:text-primary/80">
                         <Edit className="h-4 w-4" />
                       </Button>
                        <AlertDialog>
@@ -278,4 +281,3 @@ export default function TransactionsPage() {
     </div>
   );
 }
-import { Card, CardContent } from '@/components/ui/card'; // Added for loading and empty states

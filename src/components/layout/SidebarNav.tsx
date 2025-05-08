@@ -1,21 +1,24 @@
-
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, ListChecks, PieChart, Settings, Download, Upload } from 'lucide-react';
+import { LayoutDashboard, ListChecks, PieChart, Settings, Info, Download, Upload } from 'lucide-react';
 import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
 } from '@/components/ui/sidebar';
-import { Button } from '@/components/ui/button';
 import { useAppData } from '@/contexts/AppDataContext';
 import React from 'react';
 
-const navItems = [
+const mainNavItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/transactions', label: 'Transactions', icon: ListChecks },
   { href: '/budgets', label: 'Budgets', icon: PieChart },
+];
+
+const utilityNavItems = [
+  { href: '/settings', label: 'Settings', icon: Settings },
+  { href: '/about', label: 'About', icon: Info },
 ];
 
 export function SidebarNav() {
@@ -32,7 +35,6 @@ export function SidebarNav() {
     if (file) {
       importData(file);
     }
-    // Reset file input to allow importing the same file again if needed
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -40,8 +42,8 @@ export function SidebarNav() {
 
   return (
     <nav className="flex flex-col h-full">
-      <SidebarMenu className="flex-1">
-        {navItems.map((item) => (
+      <SidebarMenu className="flex-grow">
+        {mainNavItems.map((item) => (
           <SidebarMenuItem key={item.label}>
             <Link href={item.href} passHref legacyBehavior>
               <SidebarMenuButton
@@ -85,6 +87,20 @@ export function SidebarNav() {
               className="hidden"
             />
         </SidebarMenuItem>
+         {utilityNavItems.map((item) => (
+          <SidebarMenuItem key={item.label}>
+            <Link href={item.href} passHref legacyBehavior>
+              <SidebarMenuButton
+                isActive={pathname === item.href}
+                className="w-full"
+                tooltip={item.label}
+              >
+                <item.icon className="h-5 w-5" />
+                <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
+              </SidebarMenuButton>
+            </Link>
+          </SidebarMenuItem>
+        ))}
       </SidebarMenu>
     </nav>
   );

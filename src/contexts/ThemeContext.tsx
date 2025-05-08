@@ -1,59 +1,105 @@
-
 'use client';
 import type { ReactNode } from 'react';
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
-type Theme = 'light' | 'dark';
+type ThemeSetting = 'light' | 'dark' | 'system';
+type EffectiveTheme = 'light' | 'dark';
+
 interface ThemeContextType {
-  theme: Theme;
-  setTheme: (theme: Theme) => void;
-  toggleTheme: () => void;
+  themeSetting: ThemeSetting;
+  effectiveTheme: EffectiveTheme;
+  setThemeSetting: (theme: ThemeSetting) => void;
+  toggleEffectiveTheme: () => void; // For the header button to switch between light/dark
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const CustomThemeProvider = ({ children }: { children: ReactNode }) => {
-  const [theme, setThemeState] = useState<Theme>('light');
+  const [themeSetting, setThemeSettingState] = useState<ThemeSetting>('system');
+  const [effectiveTheme, setEffectiveThemeState] = useState<EffectiveTheme>('light');
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
-    const storedTheme = localStorage.getItem('budgetzen-theme') as Theme | null;
-    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const storedTheme = localStorage.getItem('budgetzen-theme') as ThemeSetting | null;
+    const systemPrefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+    let initialSetting: ThemeSetting = 'system';
     if (storedTheme) {
-      setThemeState(storedTheme);
+      initialSetting = storedTheme;
+    }
+    setThemeSettingState(initialSetting);
+
+    if (initialSetting === 'system') {
+      setEffectiveThemeState(systemPrefersDark ? 'dark' : 'light');
     } else {
-      setThemeState(prefersDark ? 'dark' : 'light');
+      setEffectiveThemeState(initialSetting);
     }
   }, []);
 
   useEffect(() => {
     if (!isMounted) return;
-    if (theme === 'dark') {
+
+    const systemPrefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    let currentEffectiveTheme: EffectiveTheme = 'light';
+
+    if (themeSetting === 'system') {
+      currentEffectiveTheme = systemPrefersDark ? 'dark' : 'light';
+    } else {
+      currentEffectiveTheme = themeSetting;
+    }
+    setEffectiveThemeState(currentEffectiveTheme);
+
+    if (currentEffectiveTheme === 'dark') {
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
     }
-    localStorage.setItem('budgetzen-theme', theme);
-  }, [theme, isMounted]);
+    localStorage.setItem('budgetzen-theme', themeSetting);
 
-  const toggleTheme = useCallback(() => {
+    // Listener for system theme changes
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = () => {
+      if (themeSetting === 'system') {
+        const newEffectiveTheme = mediaQuery.matches ? 'dark' : 'light';
+        setEffectiveThemeState(newEffectiveTheme);
+        if (newEffectiveTheme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      }
+    };
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+
+  }, [themeSetting, isMounted]);
+
+  const setThemeSetting = useCallback((newThemeSetting: ThemeSetting) => {
     if (!isMounted) return;
-    setThemeState((prevTheme) => (prevTheme === 'light' ? 'dark' : 'light'));
+    setThemeSettingState(newThemeSetting);
   }, [isMounted]);
 
-  const setTheme = useCallback((newTheme: Theme) => {
+  const toggleEffectiveTheme = useCallback(() => {
     if (!isMounted) return;
-    setThemeState(newTheme);
-  }, [isMounted]);
+    // This toggle will switch between light and dark, and set the preference explicitly
+    setThemeSettingState(prevSetting => {
+        const currentSystemPrefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const currentActualTheme = themeSetting === 'system' 
+            ? (currentSystemPrefersDark ? 'dark' : 'light') 
+            : themeSetting;
+      
+        return currentActualTheme === 'light' ? 'dark' : 'light';
+    });
+  }, [isMounted, themeSetting]);
+
 
   if (!isMounted) {
-    // Avoid rendering children until theme is determined to prevent flash/mismatch
     return null; 
   }
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>
+    <ThemeContext.Provider value={{ themeSetting, effectiveTheme, setThemeSetting, toggleEffectiveTheme }}>
       {children}
     </ThemeContext.Provider>
   );

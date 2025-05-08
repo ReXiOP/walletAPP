@@ -1,6 +1,5 @@
-
 'use client';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -48,10 +47,11 @@ type TransactionFormValues = z.infer<typeof transactionFormSchema>;
 
 interface TransactionFormProps {
   transaction?: Transaction;
+  initialType?: 'income' | 'expense';
   onClose?: () => void;
 }
 
-export const TransactionForm: React.FC<TransactionFormProps> = ({ transaction, onClose }) => {
+export const TransactionForm: React.FC<TransactionFormProps> = ({ transaction, initialType, onClose }) => {
   const { addTransaction, editTransaction } = useAppData();
 
   const form = useForm<TransactionFormValues>({
@@ -60,25 +60,40 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ transaction, o
       ? { 
           ...transaction, 
           date: new Date(transaction.date),
-          amount: Math.abs(transaction.amount) // ensure amount is positive for form
+          amount: Math.abs(transaction.amount) 
         } 
       : {
           date: new Date(),
           description: '',
           amount: 0,
-          type: 'expense',
+          type: initialType || 'expense', // Use initialType if provided
+          category: CATEGORIES[1].name, // Default to 'Food' or any other sensible default if not editing
         },
   });
 
+  useEffect(() => {
+    if (!transaction && initialType) {
+      form.reset({
+        date: new Date(),
+        description: '',
+        amount: 0,
+        type: initialType,
+        category: initialType === 'income' ? CATEGORIES.find(c => c.name === 'Salary')?.name || CATEGORIES[0].name : CATEGORIES.find(c => c.name === 'Food')?.name || CATEGORIES[1].name,
+      });
+    }
+  }, [initialType, transaction, form]);
+
   const onSubmit = (data: TransactionFormValues) => {
+    const finalAmount = data.type === 'expense' ? -Math.abs(data.amount) : Math.abs(data.amount);
+    
     const transactionData = {
       ...data,
-      date: format(data.date, 'yyyy-MM-dd'), // Store date as string
-      amount: data.type === 'expense' ? -Math.abs(data.amount) : Math.abs(data.amount) // Convert to negative for expense only when saving
+      date: format(data.date, 'yyyy-MM-dd'),
+      amount: finalAmount
     };
 
     if (transaction) {
-      editTransaction({ ...transactionData, id: transaction.id, amount: data.amount }); // pass positive amount back as original
+      editTransaction({ ...transactionData, id: transaction.id });
     } else {
       addTransaction(transactionData);
     }
@@ -88,6 +103,27 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ transaction, o
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 p-1">
+        <FormField
+          control={form.control}
+          name="type"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Type</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="income">Income</SelectItem>
+                  <SelectItem value="expense">Expense</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         <FormField
           control={form.control}
           name="date"
@@ -151,7 +187,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ transaction, o
             <FormItem>
               <FormLabel>Amount</FormLabel>
               <FormControl>
-                <Input type="number" placeholder="0.00" {...field} />
+                <Input type="number" placeholder="0.00" {...field} step="0.01" />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -176,28 +212,6 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ transaction, o
                       {cat.name}
                     </SelectItem>
                   ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="type"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Type</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select type" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="income">Income</SelectItem>
-                  <SelectItem value="expense">Expense</SelectItem>
                 </SelectContent>
               </Select>
               <FormMessage />
