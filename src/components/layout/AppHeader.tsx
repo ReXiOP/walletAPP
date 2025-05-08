@@ -3,20 +3,17 @@
 import React from 'react';
 import { useCustomTheme } from '@/contexts/ThemeContext';
 import { Button } from '@/components/ui/button';
-import { Moon, Sun, Menu } from 'lucide-react'; // Added Menu for mobile
-import { SidebarTrigger, useSidebar } from '@/components/ui/sidebar'; // useSidebar for context
+import { Moon, Sun } from 'lucide-react'; 
+import { SidebarTrigger } from '@/components/ui/sidebar'; 
 
 export function AppHeader() {
   const { effectiveTheme, toggleEffectiveTheme } = useCustomTheme();
-  const { isMobile, toggleSidebar } = useSidebar(); // Get sidebar context
 
   return (
     <header className="sticky top-0 z-40 flex items-center justify-between w-full p-3 sm:p-4 border-b border-border/60 bg-gradient-to-r from-background to-muted/30 shadow-sm backdrop-blur-sm">
       <div className="flex items-center gap-2 sm:gap-3">
-        {/* Show SidebarTrigger only on mobile (md breakpoint from sidebar component) */}
         <SidebarTrigger className="md:hidden" />
         
-        {/* Logo and Title */}
         <div className="flex items-center gap-2">
             <svg width="30" height="30" viewBox="0 0 100 100" className="text-primary shrink-0">
             <rect width="100" height="100" rx="20" fill="currentColor"/>
@@ -25,7 +22,7 @@ export function AppHeader() {
             <line x1="65" y1="25" x2="65" y2="75" stroke="hsl(var(--primary-foreground))" strokeWidth="10" strokeLinecap="round"/>
             <line x1="50" y1="65" x2="80" y2="65" stroke="hsl(var(--primary-foreground))" strokeWidth="10" strokeLinecap="round"/>
             </svg>
-            <h1 className="text-lg sm:text-xl font-bold text-primary tracking-tight">BudgetZen</h1>
+            <h1 className="text-lg sm:text-xl font-bold text-primary tracking-tight">S-Wallet</h1>
         </div>
       </div>
       

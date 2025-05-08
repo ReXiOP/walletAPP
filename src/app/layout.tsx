@@ -1,4 +1,5 @@
 
+'use client'; // Required for useState and useEffect
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
@@ -15,6 +16,8 @@ import {
   SidebarFooter,
   SidebarRail
 } from '@/components/ui/sidebar';
+import React, { useState, useEffect } from 'react';
+import SplashScreen from '@/components/layout/SplashScreen';
 
 const geistSans = Geist({ 
   variable: '--font-geist-sans',
@@ -26,24 +29,58 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 });
 
-export const metadata: Metadata = {
-  title: 'BudgetZen - Smart Finance Manager',
-  description: 'Modern, intuitive app for managing your personal finances with ease and style.',
-  manifest: '/manifest.json', 
-  themeColor: '#008080', 
-  appleWebAppCapable: 'yes',
-  appleWebAppStatusBarStyle: 'black-translucent',
-};
+// Note: The 'metadata' export was removed from here because this is a Client Component.
+// Static metadata should be exported from Server Components (e.g., page.tsx or a server layout.tsx).
+// If global metadata is needed and this root layout must remain a client component,
+// consider adding metadata to individual page.tsx files that are Server Components,
+// or explore Next.js's generateMetadata for more dynamic scenarios in Server Components.
 
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const [showSplashScreen, setShowSplashScreen] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowSplashScreen(false);
+    }, 2500); // Show splash for 2.5 seconds
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (showSplashScreen) {
+    return (
+      <html lang="en" suppressHydrationWarning>
+        <head>
+            {/* Basic metadata can be placed directly in head for client root layouts if needed, but Next.js prefers 'metadata' export from server components */}
+            <title>S-Wallet - Smart Finance Manager</title>
+            <meta name="description" content="Modern, intuitive app for managing your personal finances with S-Wallet." />
+            <link rel="manifest" href="/manifest.json" />
+            <meta name="theme-color" content="#008080" />
+            <meta name="apple-mobile-web-app-capable" content="yes" />
+            <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        </head>
+        <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground overflow-hidden`}>
+          <SplashScreen />
+        </body>
+      </html>
+    );
+  }
+
   return (
     <html lang="en" suppressHydrationWarning>
+       <head>
+            <title>S-Wallet - Smart Finance Manager</title>
+            <meta name="description" content="Modern, intuitive app for managing your personal finances with S-Wallet." />
+            <link rel="manifest" href="/manifest.json" />
+            <meta name="theme-color" content="#008080" />
+            <meta name="apple-mobile-web-app-capable" content="yes" />
+            <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground overflow-hidden`}>
-        <AppDataProvider> {/* AppDataProvider now wraps CustomThemeProvider */}
+        <AppDataProvider>
           <CustomThemeProvider>
             <SidebarProvider> 
               <div className="flex h-screen w-screen fixed inset-0"> 
@@ -79,5 +116,3 @@ export default function RootLayout({
     </html>
   );
 }
-
-    

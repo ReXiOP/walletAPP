@@ -1,3 +1,4 @@
+
 'use client';
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,21 +27,21 @@ export default function AboutPage() {
   return (
     <div className="space-y-8 max-w-3xl mx-auto">
       <header className="text-center">
-        <h1 className="text-4xl font-bold text-primary mb-2">BudgetZen</h1>
+        <h1 className="text-4xl font-bold text-primary mb-2">S-Wallet</h1>
         <p className="text-xl text-muted-foreground">Effortless finance management at your fingertips.</p>
       </header>
 
       <Card className="shadow-lg">
         <CardHeader>
           <CardTitle className="flex items-center">
-            <Zap className="mr-2 h-6 w-6 text-accent" /> About BudgetZen
+            <Zap className="mr-2 h-6 w-6 text-accent" /> About S-Wallet
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-foreground">
-            BudgetZen is a modern, user-friendly application designed to help you take control of your personal finances. 
+            S-Wallet is a modern, user-friendly application designed to help you take control of your personal finances. 
             Whether you're looking to track your daily spending, set monthly budgets, or understand your financial habits better, 
-            BudgetZen provides the tools you need in a clean and intuitive interface.
+            S-Wallet provides the tools you need in a clean and intuitive interface.
           </p>
           <p className="text-foreground">
             Our goal is to make financial management accessible and stress-free, empowering you to achieve your financial goals.
@@ -86,7 +87,7 @@ export default function AboutPage() {
       </Card>
       
       <footer className="text-center text-muted-foreground py-6">
-        <p>&copy; {new Date().getFullYear()} BudgetZen. All rights reserved.</p>
+        <p>&copy; {new Date().getFullYear()} S-Wallet. All rights reserved.</p>
         <p>Crafted with ❤️ for better financial well-being.</p>
       </footer>
     </div>
