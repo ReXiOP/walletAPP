@@ -11,87 +11,88 @@
     --card-foreground: 220 15% 20%;
     --popover: 0 0% 100%;
     --popover-foreground: 220 15% 20%;
-    --primary: 200 90% 45%; /* Cool Blue */
-    --primary-foreground: 0 0% 100%; /* White text on Blue */
+    
+    /* Primary and Accent colors will be set dynamically by ThemeContext */
+    /* Define HSL components for primary and accent from CSS variables */
+    --primary: hsl(var(--primary-hsl, 200 90% 45%)); /* Default fallback */
+    --primary-foreground: hsl(var(--primary-foreground-hsl, 0 0% 100%)); /* Default fallback */
+    --accent: hsl(var(--accent-hsl, 30 90% 55%)); /* Default fallback */
+    --accent-foreground: hsl(var(--accent-foreground-hsl, 0 0% 100%)); /* Default fallback */
+
     --secondary: 220 15% 90%; /* Lighter secondary cool gray */
     --secondary-foreground: 220 15% 25%;
     --muted: 220 15% 88%; /* Slightly darker cool gray for muted elements */
     --muted-foreground: 220 10% 45%;
-    --accent: 30 90% 55%; /* Vibrant Orange/Amber */
-    --accent-foreground: 0 0% 100%; /* White text on Accent */
     --destructive: 0 75% 55%; /* Softer Red */
     --destructive-foreground: 0 0% 98%;
     --border: 220 15% 80%; /* Softer border */
     --input: 220 15% 92%; /* Light input background */
-    --ring: 200 90% 50%; /* Cool Blue for focus rings */
+    --ring: hsl(var(--primary-hsl, 200 90% 50%)); /* Cool Blue for focus rings, uses primary HSL */
     
-    --chart-1: 200 80% 50%; /* Cool Blue variant */
-    --chart-2: 30 85% 60%;  /* Orange/Amber variant */
-    --chart-3: 150 70% 45%; /* Sea Green */
-    --chart-4: 260 70% 60%; /* Lavender */
-    --chart-5: 50 75% 50%; /* Goldish */
-    --radius: 0.75rem; /* Slightly larger radius for modern feel */
+    --chart-1: var(--primary-hsl, 200 80% 50%); 
+    --chart-2: var(--accent-hsl, 30 85% 60%);
+    --chart-3: 150 70% 45%; 
+    --chart-4: 260 70% 60%; 
+    --chart-5: 50 75% 50%; 
+    --radius: 0.75rem; 
 
-    /* Sidebar Light Theme */
-    --sidebar-background: 220 25% 98%; /* Very light, almost white, cool tone */
-    --sidebar-foreground: 220 20% 30%; /* Darker cool gray text */
-    --sidebar-primary: 200 90% 45%; /* Cool Blue */
-    --sidebar-primary-foreground: 0 0% 100%; /* White */
-    --sidebar-accent: 200 80% 92%; /* Light blueish accent for hover */
-    --sidebar-accent-foreground: 200 90% 35%; /* Darker blue text on hover */
-    --sidebar-border: 220 20% 88%; /* Soft border for sidebar */
-    --sidebar-ring: 200 90% 50%; /* Cool Blue */
+    /* Sidebar Light Theme - These could also be derived or made part of palette */
+    --sidebar-background: 220 25% 98%; 
+    --sidebar-foreground: 220 20% 30%; 
+    --sidebar-primary: hsl(var(--primary-hsl, 200 90% 45%));
+    --sidebar-primary-foreground: hsl(var(--primary-foreground-hsl, 0 0% 100%));
+    --sidebar-accent: hsl(var(--primary-hsl, 200 80% 92%) / 0.3); /* Lighter version of primary for hover */
+    --sidebar-accent-foreground: hsl(var(--primary-hsl, 200 90% 35%)); 
+    --sidebar-border: 220 20% 88%; 
+    --sidebar-ring: hsl(var(--primary-hsl, 200 90% 50%));
   }
 
   .dark {
-    --background: 220 15% 10%; /* Dark cool slate */
-    --foreground: 220 10% 90%;   /* Light cool gray text */
-    --card: 220 15% 15%; /* Darker cool cards */
+    --background: 220 15% 10%; 
+    --foreground: 220 10% 90%;   
+    --card: 220 15% 15%; 
     --card-foreground: 220 10% 90%;
     --popover: 220 15% 13%;
     --popover-foreground: 220 10% 90%;
-    --primary: 200 80% 55%; /* Brighter Cool Blue for dark mode */
-    --primary-foreground: 220 10% 10%; /* Dark text on brighter Blue */
-    --secondary: 220 15% 20%; /* Darker secondary */
+
+    /* Primary and Accent are already handled by ThemeContext applying dark palette versions */
+
+    --secondary: 220 15% 20%; 
     --secondary-foreground: 220 10% 85%;
     --muted: 220 15% 22%;
     --muted-foreground: 220 10% 60%;
-    --accent: 30 80% 60%; /* Brighter Orange/Amber for dark mode */
-    --accent-foreground: 20 100% 15%; /* Dark text on brighter Accent */
-    --destructive: 0 70% 50%; /* Brighter, but still soft Red */
+    --destructive: 0 70% 50%; 
     --destructive-foreground: 0 0% 98%;
-    --border: 220 15% 25%; /* Softer dark border */
-    --input: 220 15% 18%; /* Dark input background */
-    --ring: 200 80% 60%; /* Brighter Cool Blue for focus rings */
+    --border: 220 15% 25%; 
+    --input: 220 15% 18%; 
+    --ring: hsl(var(--primary-hsl, 200 80% 60%)); 
 
-    --chart-1: 200 70% 60%; 
-    --chart-2: 30 80% 65%;  
+    --chart-1: var(--primary-hsl, 200 70% 60%); 
+    --chart-2: var(--accent-hsl, 30 80% 65%);  
     --chart-3: 150 60% 55%; 
     --chart-4: 260 60% 65%; 
     --chart-5: 50 65% 55%; 
 
-    /* Sidebar Dark Theme */
-    --sidebar-background: 220 15% 12%; /* Slightly darker than main bg */
-    --sidebar-foreground: 220 10% 75%; /* Lighter gray text */
-    --sidebar-primary: 200 80% 55%; /* Brighter Cool Blue */
-    --sidebar-primary-foreground: 220 10% 10%; /* Dark text */
-    --sidebar-accent: 200 70% 20%; /* Dark blueish accent for hover */
-    --sidebar-accent-foreground: 200 80% 70%; /* Lighter blue text on hover */
-    --sidebar-border: 220 15% 20%; /* Soft dark border for sidebar */
-    --sidebar-ring: 200 80% 60%; /* Brighter Cool Blue */
+    /* Sidebar Dark Theme - These could also be derived or made part of palette */
+    --sidebar-background: 220 15% 12%; 
+    --sidebar-foreground: 220 10% 75%; 
+    --sidebar-primary: hsl(var(--primary-hsl, 200 80% 55%));
+    --sidebar-primary-foreground: hsl(var(--primary-foreground-hsl, 220 10% 10%));
+    --sidebar-accent: hsl(var(--primary-hsl, 200 70% 20%) / 0.3);
+    --sidebar-accent-foreground: hsl(var(--primary-hsl, 200 80% 70%));
+    --sidebar-border: 220 15% 20%; 
+    --sidebar-ring: hsl(var(--primary-hsl, 200 80% 60%));
   }
 }
 
 @layer base {
   * {
-    @apply border-border transition-colors duration-150 ease-in-out; /* Subtle global transition */
+    @apply border-border transition-colors duration-150 ease-in-out; 
   }
   body {
-    @apply bg-background text-foreground antialiased; /* Added antialiased */
-    /* Font family is set by next/font in layout.tsx */
+    @apply bg-background text-foreground antialiased; 
   }
 
-  /* Custom scrollbar styles for a "cooler" feel */
   ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
@@ -101,27 +102,27 @@
     border-radius: 10px;
   }
   ::-webkit-scrollbar-thumb {
-    background: hsl(var(--primary) / 0.6);
+    background: hsl(var(--primary-hsl, 200 90% 45%) / 0.6); /* Use primary HSL */
     border-radius: 10px;
     border: 2px solid transparent;
     background-clip: content-box;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--primary) / 0.8);
+    background: hsl(var(--primary-hsl, 200 90% 45%) / 0.8); /* Use primary HSL */
   }
-  /* For Firefox */
   html {
     scrollbar-width: thin;
-    scrollbar-color: hsl(var(--primary) / 0.6) hsl(var(--muted) / 0.2);
+    scrollbar-color: hsl(var(--primary-hsl, 200 90% 45%) / 0.6) hsl(var(--muted) / 0.2); /* Use primary HSL */
   }
 }
 
 @layer components {
-  /* Add a subtle glow effect for interactive elements if desired */
   .interactive-glow {
     @apply transition-all duration-200;
   }
   .interactive-glow:hover, .interactive-glow:focus-visible {
-    @apply shadow-[0_0_15px_hsl(var(--primary)/0.3)];
+    @apply shadow-[0_0_15px_hsl(var(--primary-hsl,200_90%_45%)/0.3)]; /* Use primary HSL */
   }
 }
+
+    

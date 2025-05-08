@@ -9,7 +9,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Download, Upload, Moon, Sun, Laptop, DollarSign, CalendarDays, Trash2, Settings as SettingsIcon, Palette, AlertTriangle } from 'lucide-react';
+import { Download, Upload, Moon, Sun, Laptop, DollarSign, CalendarDays, Trash2, Settings as SettingsIcon, Palette, AlertTriangle, Paintbrush } from 'lucide-react';
+import { PREDEFINED_COLOR_PALETTES, type ColorPaletteDefinition } from '@/types';
 
 const CURRENCIES = [
   { value: 'USD', label: 'USD ($) - US Dollar' },
@@ -19,6 +20,12 @@ const CURRENCIES = [
   { value: 'INR', label: 'INR (₹) - Indian Rupee' },
   { value: 'CAD', label: 'CAD (C$) - Canadian Dollar' },
   { value: 'AUD', label: 'AUD (A$) - Australian Dollar' },
+  { value: 'CHF', label: 'CHF (Fr) - Swiss Franc' },
+  { value: 'CNY', label: 'CNY (¥) - Chinese Yuan Renminbi' },
+  { value: 'SEK', label: 'SEK (kr) - Swedish Krona' },
+  { value: 'NZD', label: 'NZD ($) - New Zealand Dollar' },
+  { value: 'BRL', label: 'BRL (R$) - Brazilian Real' },
+  { value: 'ZAR', label: 'ZAR (R) - South African Rand' },
 ];
 
 const DATE_FORMATS = [
@@ -59,29 +66,57 @@ export default function SettingsPage() {
           <CardTitle className="flex items-center"><Palette className="mr-2 h-5 w-5 text-accent" />Appearance</CardTitle>
           <CardDescription>Customize the look and feel of BudgetZen.</CardDescription>
         </CardHeader>
-        <CardContent>
-          <RadioGroup
-            value={themeSetting}
-            onValueChange={(value) => setThemeSetting(value as 'light' | 'dark' | 'system')}
-            className="grid grid-cols-1 sm:grid-cols-3 gap-4"
-          >
-            {[
-              { value: 'light', label: 'Light Mode', icon: Sun },
-              { value: 'dark', label: 'Dark Mode', icon: Moon },
-              { value: 'system', label: 'System Default', icon: Laptop },
-            ].map(item => (
-              <Label
-                key={item.value}
-                htmlFor={`theme-${item.value}`}
-                className={`flex flex-col items-center justify-center rounded-lg border-2 p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all
-                  ${themeSetting === item.value ? 'border-primary bg-accent text-accent-foreground shadow-md scale-105' : 'border-muted'}`}
-              >
-                <RadioGroupItem value={item.value} id={`theme-${item.value}`} className="sr-only" />
-                <item.icon className="mb-2 h-7 w-7" />
-                <span className="text-sm font-medium">{item.label}</span>
-              </Label>
-            ))}
-          </RadioGroup>
+        <CardContent className="space-y-6">
+          <div>
+            <Label className="text-sm font-medium mb-2 block">Theme Mode</Label>
+            <RadioGroup
+              value={themeSetting}
+              onValueChange={(value) => setThemeSetting(value as 'light' | 'dark' | 'system')}
+              className="grid grid-cols-1 sm:grid-cols-3 gap-4"
+            >
+              {[
+                { value: 'light', label: 'Light Mode', icon: Sun },
+                { value: 'dark', label: 'Dark Mode', icon: Moon },
+                { value: 'system', label: 'System Default', icon: Laptop },
+              ].map(item => (
+                <Label
+                  key={item.value}
+                  htmlFor={`theme-${item.value}`}
+                  className={`flex flex-col items-center justify-center rounded-lg border-2 p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all
+                    ${themeSetting === item.value ? 'border-primary bg-accent text-accent-foreground shadow-md scale-105' : 'border-muted'}`}
+                >
+                  <RadioGroupItem value={item.value} id={`theme-${item.value}`} className="sr-only" />
+                  <item.icon className="mb-2 h-7 w-7" />
+                  <span className="text-sm font-medium">{item.label}</span>
+                </Label>
+              ))}
+            </RadioGroup>
+          </div>
+          <div>
+            <Label htmlFor="color-palette-select" className="text-sm font-medium mb-2 block flex items-center"><Paintbrush className="mr-2 h-4 w-4"/>Color Palette</Label>
+            <Select
+              value={settings.colorPalette}
+              onValueChange={(value) => updateSettings({ colorPalette: value })}
+            >
+              <SelectTrigger id="color-palette-select" className="w-full sm:w-[280px]">
+                <SelectValue placeholder="Select color palette" />
+              </SelectTrigger>
+              <SelectContent>
+                {PREDEFINED_COLOR_PALETTES.map((palette: ColorPaletteDefinition) => (
+                  <SelectItem key={palette.id} value={palette.id}>
+                    <div className="flex items-center gap-2">
+                      <div className="flex -space-x-1">
+                        <span className="w-4 h-4 rounded-full border border-card" style={{ backgroundColor: `hsl(${palette.light.primary.split(' ').slice(0,1)}, ${palette.light.primary.split(' ')[1]}, ${palette.light.primary.split(' ')[2]})` }}></span>
+                        <span className="w-4 h-4 rounded-full border border-card" style={{ backgroundColor: `hsl(${palette.light.accent.split(' ').slice(0,1)}, ${palette.light.accent.split(' ')[1]}, ${palette.light.accent.split(' ')[2]})` }}></span>
+                      </div>
+                      {palette.name}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground mt-1">Choose a color scheme for primary and accent elements.</p>
+          </div>
         </CardContent>
       </Card>
 
@@ -179,3 +214,5 @@ export default function SettingsPage() {
     </div>
   );
 }
+
+    

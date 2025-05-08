@@ -3,13 +3,14 @@
 import type { ReactNode } from 'react';
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { Transaction, Budget, AppCategory } from '@/types';
-import { DEFAULT_CATEGORIES_DATA } from '@/types';
+import { DEFAULT_CATEGORIES_DATA, PREDEFINED_COLOR_PALETTES } from '@/types';
 import { useToast } from "@/hooks/use-toast";
 import { format, parseISO } from 'date-fns';
 
 interface AppSettings {
   currency: string;
   dateFormat: string;
+  colorPalette: string; // ID of the ColorPaletteDefinition
 }
 
 interface AppDataContextType {
@@ -51,6 +52,7 @@ const getDefaultAppCategories = (): AppCategory[] => {
 const defaultSettings: AppSettings = {
   currency: 'USD',
   dateFormat: 'MMM dd, yyyy',
+  colorPalette: PREDEFINED_COLOR_PALETTES[0].id, // Default to the first predefined palette
 };
 
 export const AppDataProvider = ({ children }: { children: ReactNode }) => {
@@ -69,8 +71,13 @@ export const AppDataProvider = ({ children }: { children: ReactNode }) => {
     if (storedBudgets) setBudgets(JSON.parse(storedBudgets));
     
     const storedSettings = localStorage.getItem('budgetzen-settings');
-    if (storedSettings) setSettings(JSON.parse(storedSettings));
-    else setSettings(defaultSettings);
+    if (storedSettings) {
+      const parsedSettings = JSON.parse(storedSettings);
+      // Ensure all default keys are present, merge with stored values
+      setSettings(prev => ({ ...defaultSettings, ...prev, ...parsedSettings }));
+    } else {
+      setSettings(defaultSettings);
+    }
 
     const storedAppCategories = localStorage.getItem('budgetzen-appCategories');
     if (storedAppCategories) {
@@ -79,18 +86,15 @@ export const AppDataProvider = ({ children }: { children: ReactNode }) => {
       const storedUserCategories = parsedCategories.filter(pc => pc.isUserDefined);
       const currentDefaults = getDefaultAppCategories(); // These will have fresh UUIDs if needed
       
-      // Combine: Take current defaults, then overwrite with stored defaults (if name matches), then add stored user categories
       let finalCategories = [...currentDefaults];
       parsedCategories.forEach(pc => {
         if (!pc.isUserDefined && defaultCategoryNames.has(pc.name)) {
-          // Update existing default category if found in storage
           const index = finalCategories.findIndex(fc => fc.name === pc.name && !fc.isUserDefined);
           if (index !== -1) finalCategories[index] = pc;
-          else finalCategories.push(pc); // Should not happen if currentDefaults is comprehensive
+          else finalCategories.push(pc);
         }
       });
       finalCategories = [...finalCategories.filter(fc => !fc.isUserDefined), ...storedUserCategories];
-      // Remove duplicates by name, prioritizing user-defined ones or ones from storage
       const uniqueCategories = Array.from(new Map(finalCategories.map(cat => [cat.name, cat])).values());
       setAppCategories(uniqueCategories.sort((a, b) => a.name.localeCompare(b.name)));
 
@@ -114,18 +118,15 @@ export const AppDataProvider = ({ children }: { children: ReactNode }) => {
     try {
       return new Intl.NumberFormat(undefined, { style: 'currency', currency: settings.currency }).format(amount);
     } catch (e) {
-      // Fallback for invalid currency code
       return `${settings.currency} ${amount.toFixed(2)}`;
     }
   }, [settings.currency]);
 
   const formatDisplayDate = useCallback((dateString: string) => {
     try {
-      // Common date-fns patterns are often directly usable by Intl.DateTimeFormat or similar logic
-      // For simplicity, we'll use date-fns format directly. More robust solution might map to Intl options.
       return format(parseISO(dateString), settings.dateFormat);
     } catch (e) {
-      return dateString; // Fallback
+      return dateString; 
     }
   }, [settings.dateFormat]);
 
@@ -221,38 +222,32 @@ export const AppDataProvider = ({ children }: { children: ReactNode }) => {
         setBudgets(data.budgets && Array.isArray(data.budgets) ? data.budgets.sort((a:Budget,b:Budget) => a.category.localeCompare(b.category)) : []);
         
         const importedSettings = data.settings || {};
+        // Ensure all default keys are present when merging imported settings
         setSettings(prev => ({...defaultSettings, ...prev, ...importedSettings}));
         
         if (data.appCategories && Array.isArray(data.appCategories)) {
            const importedCategories: AppCategory[] = data.appCategories;
-            const defaultCats = getDefaultAppCategories(); // Fresh defaults with new UUIDs if necessary
+            const defaultCats = getDefaultAppCategories(); 
             const userDefinedImported = importedCategories.filter(ic => ic.isUserDefined);
             
-            // Start with current default categories
             let finalCategories = [...defaultCats];
 
-            // Update defaults with imported defaults if they exist (preserving original UUIDs if possible from import)
             importedCategories.forEach(importedCat => {
                 if (!importedCat.isUserDefined) {
                     const existingDefaultIndex = finalCategories.findIndex(dc => dc.name === importedCat.name && !dc.isUserDefined);
                     if (existingDefaultIndex !== -1) {
-                        finalCategories[existingDefaultIndex] = { ...defaultCats.find(dc => dc.name === importedCat.name)!, ...importedCat }; // Merge, prioritize importedCat structure, but ensure default props from generation
+                        finalCategories[existingDefaultIndex] = { ...defaultCats.find(dc => dc.name === importedCat.name)!, ...importedCat }; 
                     } else {
-                        // This case should ideally not be hit if defaultCats is comprehensive
-                        // but add it just in case there's an unknown default category name in the import file
                         finalCategories.push(importedCat);
                     }
                 }
             });
             
-            // Add user-defined categories, avoiding duplicates by name
             const userCategoriesToAdd = userDefinedImported.filter(udc => !finalCategories.some(fc => fc.name === udc.name));
             finalCategories = [...finalCategories, ...userCategoriesToAdd];
             
-            // Final deduplication by name, prioritizing user-defined or more specific imported ones
             const categoryMap = new Map<string, AppCategory>();
             finalCategories.forEach(cat => {
-                // If a category with the same name exists, user-defined takes precedence, then imported, then fresh default
                 const existing = categoryMap.get(cat.name);
                 if (!existing || (cat.isUserDefined && !existing.isUserDefined) || (importedCategories.some(ic => ic.id === cat.id) && !defaultCats.some(dc => dc.id === existing.id) )) {
                     categoryMap.set(cat.name, cat);
@@ -276,7 +271,7 @@ export const AppDataProvider = ({ children }: { children: ReactNode }) => {
     setTransactions([]);
     setBudgets([]);
     setAppCategories(getDefaultAppCategories());
-    setSettings(defaultSettings); // Reset settings to default
+    setSettings(defaultSettings); 
     toast({ title: "Application Reset", description: "All your data has been reset." });
   }, [toast]);
 
@@ -310,3 +305,4 @@ export const useAppData = () => {
   return context;
 };
 
+    

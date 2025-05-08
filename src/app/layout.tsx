@@ -12,7 +12,6 @@ import {
   Sidebar,
   SidebarHeader,
   SidebarContent,
-  SidebarInset,
   SidebarFooter,
   SidebarRail
 } from '@/components/ui/sidebar';
@@ -30,8 +29,8 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: 'BudgetZen - Smart Finance Manager',
   description: 'Modern, intuitive app for managing your personal finances with ease and style.',
-  manifest: '/manifest.json', // Assuming you will add a manifest for PWA capabilities
-  themeColor: '#008080', // Teal, matching primary color
+  manifest: '/manifest.json', 
+  themeColor: '#008080', 
   appleWebAppCapable: 'yes',
   appleWebAppStatusBarStyle: 'black-translucent',
 };
@@ -43,11 +42,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground overflow-hidden`}> {/* Prevent body scroll */}
-        <CustomThemeProvider>
-          <AppDataProvider>
-            <SidebarProvider> {/* Default is collapsible on desktop */}
-              <div className="flex h-screen w-screen fixed inset-0"> {/* Fixed container for mobile-like layout */}
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground overflow-hidden`}>
+        <AppDataProvider> {/* AppDataProvider now wraps CustomThemeProvider */}
+          <CustomThemeProvider>
+            <SidebarProvider> 
+              <div className="flex h-screen w-screen fixed inset-0"> 
                 <Sidebar 
                   collapsible="icon" 
                   variant="sidebar" 
@@ -56,30 +55,29 @@ export default function RootLayout({
                   style={{ ['--sidebar-width' as string]: '250px', ['--sidebar-width-icon' as string]: '60px' }}
                 >
                   <SidebarHeader className="p-3 border-b border-sidebar-border">
-                    {/* Logo or app name could go here, visible when expanded */}
                   </SidebarHeader>
                   <SidebarContent className="flex-grow p-2 overflow-y-auto">
                     <SidebarNav />
                   </SidebarContent>
                   <SidebarFooter className="p-2 border-t border-sidebar-border">
-                    {/* Footer content if any */}
                   </SidebarFooter>
                   <SidebarRail className="group-data-[collapsible=icon]:opacity-100 opacity-0 transition-opacity duration-300" />
                 </Sidebar>
 
-                {/* Main content area */}
                 <div className="flex flex-col flex-1 overflow-hidden">
                   <AppHeader />
-                  <main className="flex-1 p-4 sm:p-6 overflow-y-auto bg-background"> {/* Scroll only main content */}
+                  <main className="flex-1 p-4 sm:p-6 overflow-y-auto bg-background"> 
                     {children}
                   </main>
                 </div>
               </div>
             </SidebarProvider>
             <Toaster />
-          </AppDataProvider>
-        </CustomThemeProvider>
+          </CustomThemeProvider>
+        </AppDataProvider>
       </body>
     </html>
   );
 }
+
+    
